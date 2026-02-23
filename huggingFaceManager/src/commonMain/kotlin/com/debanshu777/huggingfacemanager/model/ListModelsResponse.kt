@@ -4,91 +4,91 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class SearchResponse(
+data class ListModelsResponse(
     @SerialName("models")
-    val models: List<Model?>?,
+    val models: List<Model?>? = null,
     @SerialName("numItemsPerPage")
-    val numItemsPerPage: Int?,
+    val numItemsPerPage: Int? = null,
     @SerialName("numTotalItems")
-    val numTotalItems: Int?,
+    val numTotalItems: Int? = null,
     @SerialName("pageIndex")
-    val pageIndex: Int?
+    val pageIndex: Int? = null
 ) {
     @Serializable
     data class Model(
         @SerialName("author")
-        val author: String?,
+        val author: String? = null,
         @SerialName("authorData")
-        val authorData: AuthorData?,
+        val authorData: AuthorData? = null,
         @SerialName("availableInferenceProviders")
-        val availableInferenceProviders: List<AvailableInferenceProvider?>?,
+        val availableInferenceProviders: List<AvailableInferenceProvider?>? = null,
         @SerialName("downloads")
-        val downloads: Int?,
+        val downloads: Int? = null,
         @SerialName("gated")
-        val gated: Boolean?,
+        val gated: String? = null,
         @SerialName("id")
-        val id: String?,
+        val id: String? = null,
         @SerialName("isLikedByUser")
-        val isLikedByUser: Boolean?,
+        val isLikedByUser: Boolean? = null,
         @SerialName("lastModified")
-        val lastModified: String?,
+        val lastModified: String? = null,
         @SerialName("likes")
-        val likes: Int?,
+        val likes: Int? = null,
         @SerialName("numParameters")
-        val numParameters: Long?,
+        val numParameters: Long? = null,
         @SerialName("pipeline_tag")
-        val pipelineTag: String?,
+        val pipelineTag: String? = null,
         @SerialName("private")
-        val `private`: Boolean?,
+        val `private`: Boolean? = null,
         @SerialName("repoType")
-        val repoType: String?
+        val repoType: String? = null
     ) {
         @Serializable
         data class AuthorData(
             @SerialName("avatarUrl")
-            val avatarUrl: String?,
+            val avatarUrl: String? = null,
             @SerialName("followerCount")
-            val followerCount: Int?,
+            val followerCount: Int? = null,
             @SerialName("fullname")
-            val fullname: String?,
+            val fullname: String? = null,
             @SerialName("_id")
-            val id: String?,
+            val id: String? = null,
             @SerialName("isHf")
-            val isHf: Boolean?,
+            val isHf: Boolean? = null,
             @SerialName("isHfAdmin")
-            val isHfAdmin: Boolean?,
+            val isHfAdmin: Boolean? = null,
             @SerialName("isMod")
-            val isMod: Boolean?,
+            val isMod: Boolean? = null,
             @SerialName("isPro")
-            val isPro: Boolean?,
+            val isPro: Boolean? = null,
             @SerialName("isUserFollowing")
-            val isUserFollowing: Boolean?,
+            val isUserFollowing: Boolean? = null,
             @SerialName("name")
-            val name: String?,
+            val name: String? = null,
             @SerialName("plan")
-            val plan: String?,
+            val plan: String? = null,
             @SerialName("type")
-            val type: String?
+            val type: String? = null
         )
 
         @Serializable
         data class AvailableInferenceProvider(
             @SerialName("isCheapestPricingOutput")
-            val isCheapestPricingOutput: Boolean?,
+            val isCheapestPricingOutput: Boolean? = null,
             @SerialName("isFastestThroughput")
-            val isFastestThroughput: Boolean?,
+            val isFastestThroughput: Boolean? = null,
             @SerialName("isModelAuthor")
-            val isModelAuthor: Boolean?,
+            val isModelAuthor: Boolean? = null,
             @SerialName("modelStatus")
-            val modelStatus: String?,
+            val modelStatus: String? = null,
             @SerialName("provider")
-            val provider: String?,
+            val provider: String? = null,
             @SerialName("providerId")
-            val providerId: String?,
+            val providerId: String? = null,
             @SerialName("providerStatus")
-            val providerStatus: String?,
+            val providerStatus: String? = null,
             @SerialName("task")
-            val task: String?
+            val task: String? = null
         )
     }
 }

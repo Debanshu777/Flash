@@ -4,7 +4,8 @@ import com.debanshu777.huggingfacemanager.model.ModelSort
 import com.debanshu777.huggingfacemanager.model.ParameterRange
 
 /**
- * Validated search parameters for Hugging Face models API.
+ * Validated listing parameters for Hugging Face models API.
+ * Supports filters (parameter range, library), sorting, and pagination.
  *
  * @param minParams Minimum parameter range (default: ZERO)
  * @param maxParams Maximum parameter range (default: SIX_B). Must be >= minParams.
@@ -13,7 +14,7 @@ import com.debanshu777.huggingfacemanager.model.ParameterRange
  * @param page Page index, 0-based (default: 0)
  * @param withCount Include total count in response (default: true)
  */
-data class SearchParams(
+data class ListModelsParams(
     val minParams: ParameterRange = ParameterRange.ZERO,
     val maxParams: ParameterRange = ParameterRange.SIX_B,
     val library: List<String> = DEFAULT_LIBRARY,

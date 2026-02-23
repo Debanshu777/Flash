@@ -3,7 +3,8 @@ package com.debanshu777.huggingfacemanager.api
 import com.debanshu777.huggingfacemanager.api.error.DataError
 import com.debanshu777.huggingfacemanager.api.error.Result
 import com.debanshu777.huggingfacemanager.model.ModelDetailResponse
-import com.debanshu777.huggingfacemanager.model.SearchResponse
+import com.debanshu777.huggingfacemanager.model.ListModelsResponse
+import com.debanshu777.huggingfacemanager.model.SearchModelsResponse
 import io.ktor.client.HttpClient
 import io.ktor.http.URLBuilder
 import io.ktor.http.encodedPath
@@ -16,7 +17,7 @@ class RemoteHuggingFaceApiService(
 ) {
     private val clientWrapper = ClientWrapper(client, json)
 
-    suspend fun searchModels(params: SearchParams): Result<SearchResponse, DataError.Network> {
+    suspend fun listModels(params: ListModelsParams): Result<ListModelsResponse, DataError.Network> {
         val url = URLBuilder(baseUrl).apply {
             encodedPath = "models-json"
             parameters.apply {
@@ -28,6 +29,22 @@ class RemoteHuggingFaceApiService(
                 append("sort", params.sort.apiValue)
                 append("withCount", params.withCount.toString())
                 append("p", params.page.toString())
+            }
+        }.build()
+
+        return clientWrapper.networkGetUsecase(
+            endpoint = url.toString(),
+            queries = null
+        )
+    }
+
+    suspend fun searchModels(params: SearchModelsParams): Result<SearchModelsResponse, DataError.Network> {
+        val url = URLBuilder(baseUrl).apply {
+            encodedPath = "api/quicksearch"
+            parameters.apply {
+                append("q", params.query)
+                append("type", "model")
+                append("limit", params.limit.toString())
             }
         }.build()
 

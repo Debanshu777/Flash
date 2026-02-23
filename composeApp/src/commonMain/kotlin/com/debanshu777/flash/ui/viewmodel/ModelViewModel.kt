@@ -1,0 +1,218 @@
+package com.debanshu777.flash.ui.viewmodel
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.debanshu777.huggingfacemanager.HuggingFaceApi
+import com.debanshu777.huggingfacemanager.api.ListModelsParams
+import com.debanshu777.huggingfacemanager.api.SearchModelsParams
+import com.debanshu777.huggingfacemanager.api.error.DataError
+import com.debanshu777.huggingfacemanager.api.error.Result
+import com.debanshu777.huggingfacemanager.model.ModelDetailResponse
+import com.debanshu777.huggingfacemanager.model.ModelSort
+import com.debanshu777.huggingfacemanager.model.ParameterRange
+import com.debanshu777.huggingfacemanager.model.ListModelsResponse
+import com.debanshu777.huggingfacemanager.model.SearchModelsResponse
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+
+class ModelViewModel(
+    private val api: HuggingFaceApi
+) : ViewModel() {
+
+    private val _listParams = MutableStateFlow(
+        ListModelsParams(
+            minParams = ParameterRange.ZERO,
+            maxParams = ParameterRange.SIX_B,
+            sort = ModelSort.TRENDING
+        )
+    )
+    val listParams: StateFlow<ListModelsParams> = _listParams.asStateFlow()
+
+    private val _listResponse = MutableStateFlow<ListModelsResponse?>(null)
+    val listResponse: StateFlow<ListModelsResponse?> = _listResponse.asStateFlow()
+
+    private val _isListLoading = MutableStateFlow(false)
+    val isListLoading: StateFlow<Boolean> = _isListLoading.asStateFlow()
+
+    private val _listError = MutableStateFlow<String?>(null)
+    val listError: StateFlow<String?> = _listError.asStateFlow()
+
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+
+    private val _searchResponse = MutableStateFlow<SearchModelsResponse?>(null)
+    val searchResponse: StateFlow<SearchModelsResponse?> = _searchResponse.asStateFlow()
+
+    private val _isSearchLoading = MutableStateFlow(false)
+    val isSearchLoading: StateFlow<Boolean> = _isSearchLoading.asStateFlow()
+
+    private val _searchError = MutableStateFlow<String?>(null)
+    val searchError: StateFlow<String?> = _searchError.asStateFlow()
+
+    private val _modelDetail = MutableStateFlow<ModelDetailResponse?>(null)
+    val modelDetail: StateFlow<ModelDetailResponse?> = _modelDetail.asStateFlow()
+
+    private val _isDetailLoading = MutableStateFlow(false)
+    val isDetailLoading: StateFlow<Boolean> = _isDetailLoading.asStateFlow()
+
+    private val _detailError = MutableStateFlow<String?>(null)
+    val detailError: StateFlow<String?> = _detailError.asStateFlow()
+
+    fun loadModels() {
+        viewModelScope.launch {
+            _isListLoading.update { true }
+            _listError.update { null }
+            when (val result = api.listModels(_listParams.value)) {
+                is Result.Success -> {
+                    _listResponse.update { result.data }
+                    _listError.update { null }
+                }
+                is Result.Error -> {
+                    _listError.update { 
+                        when (result.error) {
+                            DataError.Network.NoInternet -> 
+                                "No internet connection. Please check your network and try again."
+                            DataError.Network.Serialization -> 
+                                "Failed to process server response. The data format may be invalid."
+                            DataError.Network.Unauthorized -> 
+                                "Authentication failed. Please check your credentials."
+                            DataError.Network.RequestTimeout -> 
+                                "Request timed out. The server took too long to respond."
+                            DataError.Network.Conflict -> 
+                                "Request conflict. Please refresh and try again."
+                            DataError.Network.PayloadTooLarge -> 
+                                "Request too large. Try adjusting your filters."
+                            DataError.Network.ServerError -> 
+                                "Server error occurred. Please try again later."
+                            DataError.Network.Unknown -> 
+                                "An unexpected error occurred. Please try again."
+                        }
+                    }
+                }
+            }
+            _isListLoading.update { false }
+        }
+    }
+
+    fun updateParams(
+        sort: ModelSort? = null,
+        minParams: ParameterRange? = null,
+        maxParams: ParameterRange? = null
+    ) {
+        val current = _listParams.value
+        val newMin = minParams ?: current.minParams
+        val newMax = maxParams ?: current.maxParams
+        val adjustedMax = if (newMax.ordinal < newMin.ordinal) newMin else newMax
+        _listParams.update {
+            it.copy(
+                sort = sort ?: it.sort,
+                minParams = newMin,
+                maxParams = adjustedMax
+            )
+        }
+    }
+
+    fun loadDetail(modelId: String) {
+        if (modelId.isBlank()) return
+        viewModelScope.launch {
+            _isDetailLoading.update { true }
+            _detailError.update { null }
+            _modelDetail.update { null }
+            when (val result = api.getModelDetail(modelId)) {
+                is Result.Success -> {
+                    _modelDetail.update { result.data }
+                    _detailError.update { null }
+                }
+                is Result.Error -> {
+                    _detailError.update { 
+                        when (result.error) {
+                            DataError.Network.NoInternet -> 
+                                "No internet connection. Please check your network and try again."
+                            DataError.Network.Serialization -> 
+                                "Failed to process server response. The data format may be invalid."
+                            DataError.Network.Unauthorized -> 
+                                "Authentication failed. Please check your credentials."
+                            DataError.Network.RequestTimeout -> 
+                                "Request timed out. The server took too long to respond."
+                            DataError.Network.Conflict -> 
+                                "Request conflict. Please refresh and try again."
+                            DataError.Network.PayloadTooLarge -> 
+                                "Request too large. The model ID may be invalid."
+                            DataError.Network.ServerError -> 
+                                "Server error occurred. Please try again later."
+                            DataError.Network.Unknown -> 
+                                "Could not load model details. Please try again."
+                        }
+                    }
+                }
+            }
+            _isDetailLoading.update { false }
+        }
+    }
+
+    fun clearDetailError() {
+        _detailError.update { null }
+    }
+
+    fun clearListError() {
+        _listError.update { null }
+    }
+
+    fun updateSearchQuery(query: String) {
+        _searchQuery.update { query }
+    }
+
+    fun performSearch() {
+        val query = _searchQuery.value
+        if (query.isBlank()) {
+            _searchError.update { "Please enter a search query" }
+            return
+        }
+        viewModelScope.launch {
+            _isSearchLoading.update { true }
+            _searchError.update { null }
+            when (val result = api.searchModels(SearchModelsParams(query = query))) {
+                is Result.Success -> {
+                    _searchResponse.update { result.data }
+                    _searchError.update { null }
+                }
+                is Result.Error -> {
+                    _searchError.update { 
+                        when (result.error) {
+                            DataError.Network.NoInternet -> 
+                                "No internet connection. Please check your network and try again."
+                            DataError.Network.Serialization -> 
+                                "Failed to process server response. The data format may be invalid."
+                            DataError.Network.Unauthorized -> 
+                                "Authentication failed. Please check your credentials."
+                            DataError.Network.RequestTimeout -> 
+                                "Request timed out. The server took too long to respond."
+                            DataError.Network.Conflict -> 
+                                "Request conflict. Please refresh and try again."
+                            DataError.Network.PayloadTooLarge -> 
+                                "Request too large. Try a shorter query."
+                            DataError.Network.ServerError -> 
+                                "Server error occurred. Please try again later."
+                            DataError.Network.Unknown -> 
+                                "An unexpected error occurred. Please try again."
+                        }
+                    }
+                }
+            }
+            _isSearchLoading.update { false }
+        }
+    }
+
+    fun clearSearch() {
+        _searchQuery.update { "" }
+        _searchResponse.update { null }
+        _searchError.update { null }
+    }
+
+    fun clearSearchError() {
+        _searchError.update { null }
+    }
+}

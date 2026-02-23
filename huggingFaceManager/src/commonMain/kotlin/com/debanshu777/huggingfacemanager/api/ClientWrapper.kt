@@ -42,6 +42,7 @@ class ClientWrapper(
                     Result.Error(DataError.Network.Serialization)
                 }
             }
+
             401 -> Result.Error(DataError.Network.Unauthorized)
             408 -> Result.Error(DataError.Network.RequestTimeout)
             409 -> Result.Error(DataError.Network.Conflict)
