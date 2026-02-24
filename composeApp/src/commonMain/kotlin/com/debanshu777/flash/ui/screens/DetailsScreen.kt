@@ -29,6 +29,8 @@ fun DetailsScreen(
     val modelDetail by viewModel.modelDetail.collectAsState()
     val isDetailLoading by viewModel.isDetailLoading.collectAsState()
     val detailError by viewModel.detailError.collectAsState()
+    val ggufFiles by viewModel.ggufFiles.collectAsState()
+    val isDownloading by viewModel.isDownloading.collectAsState()
 
     LaunchedEffect(modelId) {
         viewModel.loadDetail(modelId)
@@ -59,6 +61,11 @@ fun DetailsScreen(
                 )
                 modelDetail != null -> ModelDetailContent(
                     model = modelDetail,
+                    ggufFiles = ggufFiles,
+                    isDownloading = isDownloading,
+                    onDownloadClick = { modelId, path, metadata -> 
+                        viewModel.startDownload(modelId, path, metadata) 
+                    },
                     modifier = Modifier.fillMaxSize()
                 )
             }

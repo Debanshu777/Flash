@@ -3,6 +3,7 @@ package com.debanshu777.huggingfacemanager
 import com.debanshu777.huggingfacemanager.api.RemoteHuggingFaceApiService
 import com.debanshu777.huggingfacemanager.repository.HuggingFaceRepository
 import com.debanshu777.huggingfacemanager.usecase.GetModelDetailUseCase
+import com.debanshu777.huggingfacemanager.usecase.GetModelFileTreeUseCase
 import com.debanshu777.huggingfacemanager.usecase.ListModelsUseCase
 import com.debanshu777.huggingfacemanager.usecase.SearchModelsUseCase
 import io.ktor.client.plugins.HttpRequestRetry
@@ -17,6 +18,7 @@ interface HuggingFaceApi {
     val listModels: ListModelsUseCase
     val searchModels: SearchModelsUseCase
     val getModelDetail: GetModelDetailUseCase
+    val getModelFileTree: GetModelFileTreeUseCase
 }
 
 object HuggingFaceConstants {
@@ -57,12 +59,14 @@ fun createHuggingFaceApi(baseUrl: String = HuggingFaceConstants.DEFAULT_BASE_URL
     return DefaultHuggingFaceApi(
         listModels = ListModelsUseCase(repository),
         searchModels = SearchModelsUseCase(repository),
-        getModelDetail = GetModelDetailUseCase(repository)
+        getModelDetail = GetModelDetailUseCase(repository),
+        getModelFileTree = GetModelFileTreeUseCase(repository)
     )
 }
 
 private class DefaultHuggingFaceApi(
     override val listModels: ListModelsUseCase,
     override val searchModels: SearchModelsUseCase,
-    override val getModelDetail: GetModelDetailUseCase
+    override val getModelDetail: GetModelDetailUseCase,
+    override val getModelFileTree: GetModelFileTreeUseCase
 ) : HuggingFaceApi

@@ -4,6 +4,7 @@ import com.debanshu777.huggingfacemanager.api.error.DataError
 import com.debanshu777.huggingfacemanager.api.error.Result
 import com.debanshu777.huggingfacemanager.model.ModelDetailResponse
 import com.debanshu777.huggingfacemanager.model.ListModelsResponse
+import com.debanshu777.huggingfacemanager.model.ModelFileTreeResponse
 import com.debanshu777.huggingfacemanager.model.SearchModelsResponse
 import io.ktor.client.HttpClient
 import io.ktor.http.URLBuilder
@@ -61,6 +62,18 @@ class RemoteHuggingFaceApiService(
         }.build()
 
         return clientWrapper.networkGetUsecase(
+            endpoint = url.toString(),
+            queries = null
+        )
+    }
+
+    suspend fun getModelFileTree(modelId: String): Result<List<ModelFileTreeResponse>, DataError.Network> {
+        require(modelId.isNotBlank()) { "modelId must not be blank" }
+        val url = URLBuilder(baseUrl).apply {
+            encodedPath = "api/models/${modelId.trim()}/tree/main"
+            parameters.append("recursive", "true")
+        }.build()
+        return clientWrapper.networkGetUsecase<List<ModelFileTreeResponse>>(
             endpoint = url.toString(),
             queries = null
         )

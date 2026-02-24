@@ -1,0 +1,23 @@
+package com.debanshu777.huggingfacemanager.download
+
+import java.io.File
+
+class JvmStoragePathProvider : StoragePathProvider {
+    private val appDir: File by lazy {
+        val home = System.getProperty("user.home") ?: ""
+        val dir = when {
+            System.getProperty("os.name").orEmpty().lowercase().contains("mac") ->
+                File(home, "Library/Application Support/Flash")
+            System.getProperty("os.name").orEmpty().lowercase().contains("win") ->
+                File(System.getenv("APPDATA") ?: home, "Flash")
+            else -> File(home, ".config/Flash")
+        }
+        dir.apply { mkdirs() }
+    }
+    
+    override fun getModelsStorageDirectory(modelId: String): String =
+        File(appDir, "models/$modelId").apply { mkdirs() }.absolutePath
+    
+    override fun getDatabasePath(): String =
+        File(appDir, "databases").apply { mkdirs() }.absolutePath + "/flash.db"
+}

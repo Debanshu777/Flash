@@ -2,11 +2,14 @@ package com.debanshu777.flash.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.debanshu777.flash.storage.LocalModelRepository
 import com.debanshu777.huggingfacemanager.HuggingFaceApi
 import com.debanshu777.huggingfacemanager.api.ListModelsParams
 import com.debanshu777.huggingfacemanager.api.SearchModelsParams
 import com.debanshu777.huggingfacemanager.api.error.DataError
 import com.debanshu777.huggingfacemanager.api.error.Result
+import com.debanshu777.huggingfacemanager.download.DownloadManager
+import com.debanshu777.huggingfacemanager.download.DownloadMetadataDTO
 import com.debanshu777.huggingfacemanager.model.ModelDetailResponse
 import com.debanshu777.huggingfacemanager.model.ModelSort
 import com.debanshu777.huggingfacemanager.model.ParameterRange
@@ -18,8 +21,18 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+data class GgufFileUiState(
+    val path: String,
+    val filename: String,
+    val sizeBytes: Long?,
+    val isDownloaded: Boolean,
+    val progress: Float?  // null = not downloading, 0-100 = in progress
+)
+
 class ModelViewModel(
-    private val api: HuggingFaceApi
+    private val api: HuggingFaceApi,
+    private val localModelRepository: LocalModelRepository,
+    private val downloadManager: DownloadManager
 ) : ViewModel() {
 
     private val _listParams = MutableStateFlow(
@@ -60,6 +73,12 @@ class ModelViewModel(
 
     private val _detailError = MutableStateFlow<String?>(null)
     val detailError: StateFlow<String?> = _detailError.asStateFlow()
+
+    private val _ggufFiles = MutableStateFlow<List<GgufFileUiState>>(emptyList())
+    val ggufFiles: StateFlow<List<GgufFileUiState>> = _ggufFiles.asStateFlow()
+
+    private val _isDownloading = MutableStateFlow(false)
+    val isDownloading: StateFlow<Boolean> = _isDownloading.asStateFlow()
 
     fun loadModels() {
         viewModelScope.launch {
@@ -121,14 +140,38 @@ class ModelViewModel(
             _isDetailLoading.update { true }
             _detailError.update { null }
             _modelDetail.update { null }
-            when (val result = api.getModelDetail(modelId)) {
+            _ggufFiles.update { emptyList() }
+
+            when (val detailResult = api.getModelDetail(modelId)) {
                 is Result.Success -> {
-                    _modelDetail.update { result.data }
+                    _modelDetail.update { detailResult.data }
                     _detailError.update { null }
+                    
+                    // Load GGUF files
+                    when (val treeResult = api.getModelFileTree(modelId)) {
+                        is Result.Success -> {
+                            val downloaded = localModelRepository.getDownloadedFilenames(modelId)
+                            _ggufFiles.update {
+                                treeResult.data.map { item ->
+                                    val fn = item.path?.substringAfterLast('/') ?: item.path ?: ""
+                                    GgufFileUiState(
+                                        path = item.path ?: "",
+                                        filename = fn,
+                                        sizeBytes = item.size,
+                                        isDownloaded = fn in downloaded,
+                                        progress = null
+                                    )
+                                }
+                            }
+                        }
+                        is Result.Error -> {
+                            // Optionally handle GGUF file tree error
+                        }
+                    }
                 }
                 is Result.Error -> {
                     _detailError.update { 
-                        when (result.error) {
+                        when (detailResult.error) {
                             DataError.Network.NoInternet -> 
                                 "No internet connection. Please check your network and try again."
                             DataError.Network.Serialization -> 
@@ -150,6 +193,48 @@ class ModelViewModel(
                 }
             }
             _isDetailLoading.update { false }
+        }
+    }
+
+    fun startDownload(modelId: String, path: String, metadata: DownloadMetadataDTO) {
+        if (_isDownloading.value) return
+        viewModelScope.launch {
+            _isDownloading.update { true }
+            try {
+                downloadManager.download(modelId, path, metadata).collect { progress ->
+                    _ggufFiles.update { list ->
+                        list.map {
+                            if (it.path == path) it.copy(progress = progress.percentage) else it
+                        }
+                    }
+                    if (progress.localPath != null) {
+                        localModelRepository.insert(
+                            modelId = modelId,
+                            filename = path.substringAfterLast('/').ifEmpty { path },
+                            localPath = progress.localPath!!,
+                            sizeBytes = metadata.sizeBytes,
+                            author = metadata.author,
+                            libraryName = metadata.libraryName,
+                            pipelineTag = metadata.pipelineTag
+                        )
+                    }
+                }
+                // Refresh download status
+                val downloaded = localModelRepository.getDownloadedFilenames(modelId)
+                _ggufFiles.update { list ->
+                    list.map { file ->
+                        if (file.path == path) {
+                            file.copy(isDownloaded = true, progress = null)
+                        } else {
+                            file.copy(isDownloaded = file.filename in downloaded)
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                _detailError.update { "Download failed. Please try again." }
+            } finally {
+                _isDownloading.update { false }
+            }
         }
     }
 

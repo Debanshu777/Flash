@@ -7,6 +7,7 @@ import com.debanshu777.huggingfacemanager.api.error.DataError
 import com.debanshu777.huggingfacemanager.api.error.Result
 import com.debanshu777.huggingfacemanager.model.ModelDetailResponse
 import com.debanshu777.huggingfacemanager.model.ListModelsResponse
+import com.debanshu777.huggingfacemanager.model.ModelFileTreeResponse
 import com.debanshu777.huggingfacemanager.model.SearchModelsResponse
 
 class HuggingFaceRepository(
@@ -20,4 +21,7 @@ class HuggingFaceRepository(
 
     suspend fun getModelDetail(modelId: String): Result<ModelDetailResponse, DataError.Network> =
         api.getModelDetail(modelId)
+
+    suspend fun getModelFileTree(modelId: String): Result<List<ModelFileTreeResponse>, DataError.Network> =
+        api.getModelFileTree(modelId)
 }

@@ -8,17 +8,23 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.debanshu777.huggingfacemanager.download.DownloadMetadataDTO
 import com.debanshu777.huggingfacemanager.model.ModelDetailResponse
+import com.debanshu777.flash.ui.viewmodel.GgufFileUiState
 
 @Composable
 fun ModelDetailContent(
     model: ModelDetailResponse?,
+    ggufFiles: List<GgufFileUiState>,
+    isDownloading: Boolean,
+    onDownloadClick: (String, String, DownloadMetadataDTO) -> Unit,
     modifier: Modifier = Modifier
 ) {
     if (model == null) return
@@ -75,6 +81,45 @@ fun ModelDetailContent(
         model.cardData?.let { card ->
             DetailRow("License", card.license)
             DetailRow("Base model", card.baseModel)
+        }
+        
+        // GGUF Files Section
+        if (ggufFiles.isNotEmpty()) {
+            HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
+            Text(
+                text = "GGUF Files",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            ggufFiles.forEach { item ->
+                GgufFileListItem(
+                    filename = item.filename,
+                    sizeBytes = item.sizeBytes,
+                    isDownloaded = item.isDownloaded,
+                    progress = item.progress,
+                    isDownloading = isDownloading,
+                    onDownloadClick = {
+                        onDownloadClick(
+                            model.modelId ?: model.id ?: "",
+                            item.path,
+                            DownloadMetadataDTO(
+                                item.sizeBytes,
+                                model.author,
+                                model.libraryName,
+                                model.pipelineTag
+                            )
+                        )
+                    }
+                )
+            }
+        } else if (model != null) {
+            HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
+            Text(
+                text = "No GGUF files found",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }
