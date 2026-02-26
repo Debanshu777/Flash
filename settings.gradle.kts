@@ -21,5 +21,5 @@ plugins {
 }
 
 include(":composeApp")
-include(":androidApp")
 include(":huggingFaceManager")
+include(":runner")

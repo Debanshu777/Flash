@@ -2,12 +2,19 @@ package com.debanshu777.flash.ui.screens
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -27,6 +34,7 @@ import com.debanshu777.flash.ui.viewmodel.ModelViewModel
 fun SearchScreen(
     viewModel: ModelViewModel,
     onNavigateToDetails: (String) -> Unit,
+    onNavigateToDownloads: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val searchQuery by viewModel.searchQuery.collectAsState()
@@ -42,21 +50,34 @@ fun SearchScreen(
     val isSearchMode = searchQuery.isNotEmpty() || searchResponse != null
 
     Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(16.dp)
+        modifier = modifier.fillMaxSize()
     ) {
-        SearchBar(
-            query = searchQuery,
-            onQueryChange = { viewModel.updateSearchQuery(it) },
-            onSearch = {
-                if (searchQuery.isNotEmpty()) {
-                    viewModel.performSearch()
-                } else {
-                    viewModel.loadModels()
-                }
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            SearchBar(
+                query = searchQuery,
+                onQueryChange = { viewModel.updateSearchQuery(it) },
+                onSearch = {
+                    if (searchQuery.isNotEmpty()) {
+                        viewModel.performSearch()
+                    } else {
+                        viewModel.loadModels()
+                    }
+                },
+                modifier = Modifier.weight(1f)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Button(onClick = onNavigateToDownloads) {
+                Icon(
+                    imageVector = Icons.Default.Download,
+                    contentDescription = "My Downloads"
+                )
             }
-        )
+        }
 
         if (isSearchMode) {
             if (searchResponse != null || searchError != null) {

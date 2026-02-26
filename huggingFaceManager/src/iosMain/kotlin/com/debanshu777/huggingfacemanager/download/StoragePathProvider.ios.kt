@@ -23,4 +23,14 @@ class IosStoragePathProvider : StoragePathProvider {
         NSFileManager.defaultManager.createDirectoryAtPath(dbDir, true, null, null)
         return "$dbDir/flash.db"
     }
+    
+    @OptIn(ExperimentalForeignApi::class)
+    override fun fileExists(path: String): Boolean =
+        NSFileManager.defaultManager.fileExistsAtPath(path)
+
+    @OptIn(ExperimentalForeignApi::class)
+    override fun isModelFileReadable(path: String): Boolean {
+        val mgr = NSFileManager.defaultManager
+        return mgr.fileExistsAtPath(path) && mgr.isReadableFileAtPath(path)
+    }
 }

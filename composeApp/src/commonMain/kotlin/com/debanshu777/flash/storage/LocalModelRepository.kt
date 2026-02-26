@@ -1,8 +1,13 @@
 package com.debanshu777.flash.storage
 
+import kotlinx.coroutines.flow.Flow
+
 class LocalModelRepository(private val dao: LocalModelDao) {
     suspend fun getDownloadedFilenames(modelId: String): Set<String> =
         dao.getFilenamesByModelId(modelId).toSet()
+
+    fun getAllDownloadedFiles(): Flow<List<LocalModelEntity>> =
+        dao.getAllDownloadedFiles()
 
     suspend fun insert(
         modelId: String,

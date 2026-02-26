@@ -8,7 +8,7 @@ class AndroidStoragePathProvider(private val context: Context) : StoragePathProv
     override fun getModelsStorageDirectory(modelId: String): String {
         val base = when {
             Environment.getExternalStorageState() == Environment.MEDIA_MOUNTED ->
-                context.getExternalFilesDirs( null).firstOrNull()
+                context.getExternalFilesDir(null)
             else -> null
         } ?: context.filesDir
         return File(base, "models/$modelId").apply { mkdirs() }.absolutePath
@@ -16,4 +16,11 @@ class AndroidStoragePathProvider(private val context: Context) : StoragePathProv
     
     override fun getDatabasePath(): String =
         File(context.filesDir, "databases").apply { mkdirs() }.absolutePath + "/flash.db"
+    
+    override fun fileExists(path: String): Boolean = File(path).exists()
+
+    override fun isModelFileReadable(path: String): Boolean {
+        val file = File(path)
+        return file.exists() && file.isFile && file.canRead()
+    }
 }

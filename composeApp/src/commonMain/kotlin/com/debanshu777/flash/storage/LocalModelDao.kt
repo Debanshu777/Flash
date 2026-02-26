@@ -16,4 +16,7 @@ interface LocalModelDao {
 
     @Query("SELECT * FROM local_model")
     fun getAll(): Flow<List<LocalModelEntity>>
+
+    @Query("SELECT * FROM local_model ORDER BY id DESC")
+    fun getAllDownloadedFiles(): Flow<List<LocalModelEntity>>
 }

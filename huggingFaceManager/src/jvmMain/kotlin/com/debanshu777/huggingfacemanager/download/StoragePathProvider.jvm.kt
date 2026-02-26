@@ -20,4 +20,11 @@ class JvmStoragePathProvider : StoragePathProvider {
     
     override fun getDatabasePath(): String =
         File(appDir, "databases").apply { mkdirs() }.absolutePath + "/flash.db"
+    
+    override fun fileExists(path: String): Boolean = File(path).exists()
+
+    override fun isModelFileReadable(path: String): Boolean {
+        val file = File(path)
+        return file.exists() && file.isFile && file.canRead()
+    }
 }

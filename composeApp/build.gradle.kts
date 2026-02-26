@@ -3,44 +3,77 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
-    alias(libs.plugins.androidMultiplatformLibrary)
+    alias(libs.plugins.androidApplication)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.composeHotReload)
     alias(libs.plugins.ksp)
 }
 
+val minIos = "16.6"
+
 kotlin {
-    androidLibrary {
-        namespace = "com.debanshu777.flash.library"
-        compileSdk = 36
+    androidTarget {
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_21)
         }
-        androidResources {
-            enable = true
-        }
     }
 
+    val runnerProject = project(":runner")
+    val runnerBuildDir =
+        runnerProject.layout.buildDirectory
+            .get()
+            .asFile
+
     listOf(
-        iosArm64(),
-        iosSimulatorArm64(),
-    ).forEach { iosTarget ->
-        iosTarget.binaries.framework {
+        Triple(iosArm64(), "iPhoneOS", "iosArm64"),
+        Triple(iosSimulatorArm64(), "iPhoneSimulator", "iosSimulatorArm64"),
+    ).forEach { (target, sdkName, archName) ->
+        val mergeTaskName = "mergeLlamaRunnerStatic${archName.replaceFirstChar { it.uppercase() }}"
+        runnerProject.tasks.findByName(mergeTaskName)?.let { mergeTask ->
+            tasks.matching { it.name.startsWith("link") && it.name.contains(archName) }.configureEach {
+                dependsOn(mergeTask)
+            }
+        }
+        val libPath = runnerBuildDir.resolve("llama-runner-ios/$sdkName/$archName").absolutePath
+        val mergedLib = "$libPath/libllama_runner_merged.a"
+        target.binaries.framework {
             baseName = "ComposeApp"
-            isStatic = true
+            isStatic = false
+            freeCompilerArgs += "-Xbinary=bundleId=com.debanshu777.flash"
+            freeCompilerArgs += "-Xoverride-konan-properties=osVersionMin.ios_simulator_arm64=$minIos;osVersionMin.ios_arm64=$minIos"
+            linkerOpts(
+                "-L$libPath",
+                "-Wl,-force_load",
+                mergedLib,
+                "-framework",
+                "Metal",
+                "-framework",
+                "Accelerate",
+                "-framework",
+                "Foundation",
+                "-Wl,-no_implicit_dylibs",
+            )
         }
     }
 
     jvm()
 
     sourceSets {
+        androidMain.dependencies {
+            implementation(libs.compose.uiToolingPreview)
+            implementation(libs.androidx.activity.compose)
+            implementation(project.dependencies.platform(libs.koin.bom))
+            implementation(libs.koin.android)
+            implementation(libs.koin.core)
+        }
         commonMain.dependencies {
             implementation(project.dependencies.platform(libs.koin.bom))
             implementation(libs.koin.core)
             implementation(libs.koin.compose)
             implementation(libs.koin.compose.viewmodel)
             implementation(project(":huggingFaceManager"))
+            implementation(project(":runner"))
             implementation(libs.compose.runtime)
             implementation(libs.compose.foundation)
             implementation(libs.compose.material3)
@@ -63,6 +96,33 @@ kotlin {
     }
 }
 
+android {
+    namespace = "com.debanshu777.flash"
+    compileSdk = libs.versions.android.compileSdk.get().toInt()
+
+    defaultConfig {
+        applicationId = "com.debanshu777.flash"
+        minSdk = libs.versions.android.minSdk.get().toInt()
+        targetSdk = libs.versions.android.targetSdk.get().toInt()
+        versionCode = 1
+        versionName = "1.0"
+    }
+    packaging {
+        resources {
+            excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        }
+    }
+    buildTypes {
+        getByName("release") {
+            isMinifyEnabled = false
+        }
+    }
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
+    }
+}
+
 compose.desktop {
     application {
         mainClass = "com.debanshu777.flash.MainKt"
@@ -76,6 +136,7 @@ compose.desktop {
 }
 
 dependencies {
+    debugImplementation(libs.compose.uiTooling)
     add("kspAndroid", libs.androidx.room.compiler)
     add("kspIosArm64", libs.androidx.room.compiler)
     add("kspIosSimulatorArm64", libs.androidx.room.compiler)
