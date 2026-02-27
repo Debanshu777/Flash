@@ -217,6 +217,66 @@ kotlin {
         }
     }
 
+    // ---------- Desktop (JVM) JNI build for llama_runner (macOS/Linux/Windows) ----------
+    val desktopPlatform = when {
+        hostOsName.contains("mac") -> "macos"
+        hostOsName.contains("linux") -> "linux"
+        hostOsName.contains("win") -> "windows"
+        else -> error("Unsupported desktop OS: $hostOsName")
+    }
+
+    val desktopJniBuildDir = layout.buildDirectory
+        .dir("llama-runner-desktop/$desktopPlatform")
+        .get()
+        .asFile
+
+    val desktopJniSourceDir = projectDir.resolve("cmake/llama-runner-desktop")
+    val desktopCmakePath = findTool("cmake")
+
+    val buildLlamaRunnerDesktop by tasks.registering(Exec::class) {
+        group = "llama-native"
+        description = "Configure CMake for desktop ($desktopPlatform) llama_runner"
+
+        val javaHome = System.getenv("JAVA_HOME")
+            ?: run {
+                val jh = File(System.getProperty("java.home"))
+                if (jh.name == "Home") jh.parentFile?.parentFile?.absolutePath else jh.absolutePath
+            } ?: System.getProperty("java.home")
+        environment("JAVA_HOME", javaHome)
+
+        doFirst {
+            if (!desktopJniSourceDir.resolve("CMakeLists.txt").exists()) {
+                throw GradleException(
+                    "Desktop JNI CMakeLists.txt not found at: ${desktopJniSourceDir.resolve("CMakeLists.txt").absolutePath}"
+                )
+            }
+            desktopJniBuildDir.mkdirs()
+
+            val args = mutableListOf(
+                desktopCmakePath,
+                "-S", desktopJniSourceDir.absolutePath,
+                "-B", desktopJniBuildDir.absolutePath,
+                "-DCMAKE_BUILD_TYPE=Release"
+            )
+            if (desktopPlatform == "macos") {
+                args += "-DCMAKE_SYSTEM_NAME=Darwin"
+            }
+            commandLine(args)
+        }
+    }
+
+    val compileLlamaRunnerDesktop by tasks.registering(Exec::class) {
+        group = "llama-native"
+        description = "Build desktop ($desktopPlatform) llama_runner native library"
+        dependsOn(buildLlamaRunnerDesktop)
+
+        commandLine(
+            desktopCmakePath,
+            "--build", desktopJniBuildDir.absolutePath,
+            "--config", "Release"
+        )
+    }
+
     sourceSets {
         commonMain {
             dependencies {

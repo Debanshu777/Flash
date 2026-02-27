@@ -95,6 +95,7 @@ kotlin {
         jvmMain.dependencies {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutinesSwing)
+            implementation("org.slf4j:slf4j-simple:2.0.9")
         }
     }
 }
@@ -135,6 +136,28 @@ compose.desktop {
             packageName = "com.debanshu777.flash"
             packageVersion = "1.0.0"
         }
+    }
+}
+
+val desktopPlatform = when {
+    System.getProperty("os.name").lowercase().contains("mac") -> "macos"
+    System.getProperty("os.name").lowercase().contains("linux") -> "linux"
+    System.getProperty("os.name").lowercase().contains("win") -> "windows"
+    else -> "macos"
+}
+val nativeDir = project(":runner").layout.buildDirectory.dir("llama-runner-desktop/$desktopPlatform").get().asFile.absolutePath
+
+tasks.matching { it.name == "run" || it.name.endsWith("Run") }.configureEach {
+    dependsOn(":runner:compileLlamaRunnerDesktop")
+}
+
+tasks.withType(org.gradle.api.tasks.JavaExec::class.java).configureEach {
+    if (name == "run" || name.endsWith("Run")) {
+        dependsOn(":runner:compileLlamaRunnerDesktop")
+        jvmArgs(
+            "-Djava.library.path=$nativeDir",
+            "-Dflash.native.lib.dir=$nativeDir"
+        )
     }
 }
 
