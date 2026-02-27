@@ -8,6 +8,7 @@ plugins {
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.composeHotReload)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.kotlinSerialization)
 }
 
 val minIos = "16.6"
@@ -85,6 +86,8 @@ kotlin {
             implementation(libs.icons.extended)
             implementation(libs.androidx.room.runtime)
             implementation(libs.androidx.sqlite.bundled)
+            implementation(libs.navigation3.compose.ui)
+            implementation(libs.navigation3.viewmodel)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
