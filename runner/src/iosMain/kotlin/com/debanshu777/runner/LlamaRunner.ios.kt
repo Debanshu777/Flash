@@ -1,10 +1,10 @@
 package com.debanshu777.runner
 
-import com.debanshu777.runner.native.llama_runner_generate_text
-import com.debanshu777.runner.native.llama_runner_init
-import com.debanshu777.runner.native.llama_runner_load_model
-import com.debanshu777.runner.native.llama_runner_shutdown
-import com.debanshu777.runner.native.llama_runner_unload_model
+import com.debanshu777.runner.cpp.llama_runner_generate_text
+import com.debanshu777.runner.cpp.llama_runner_init
+import com.debanshu777.runner.cpp.llama_runner_load_model
+import com.debanshu777.runner.cpp.llama_runner_shutdown
+import com.debanshu777.runner.cpp.llama_runner_unload_model
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.toKString
 import platform.posix.free

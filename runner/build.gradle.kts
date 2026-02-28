@@ -68,7 +68,7 @@ kotlin {
 
             tasks.register(buildTaskName, Exec::class) {
                 doFirst {
-                    val sourceDir = projectDir.resolve("src/iosMain/native")
+                    val sourceDir = projectDir.resolve("src/iosMain/cpp")
                     val sdk = when (sdkName) {
                         "iPhoneSimulator" -> "iphonesimulator"
                         "iPhoneOS" -> "iphoneos"
@@ -167,9 +167,9 @@ kotlin {
 
             arch.compilations.getByName("main").cinterops {
                 create("llamaRunner") {
-                    defFile("src/iosMain/c_interop/llama_runner.def")
-                    packageName("com.debanshu777.runner.native")
-                    compilerOpts("-I${projectDir}/src/iosMain/native")
+                    defFile("src/iosMain/cpp/llama_runner.def")
+                    packageName("com.debanshu777.runner.cpp")
+                    compilerOpts("-I${projectDir}/src/iosMain/cpp")
                     extraOpts("-libraryPath", libPath)
                     tasks.named(interopProcessingTaskName).configure {
                         dependsOn(mergeTask)
@@ -209,9 +209,9 @@ kotlin {
         listOf(iosArm64(), iosSimulatorArm64()).forEach { arch ->
             arch.compilations.getByName("main").cinterops {
                 create("llamaRunner") {
-                    defFile("src/iosMain/c_interop/llama_runner.def")
+                    defFile("src/iosMain/cpp/llama_runner.def")
                     packageName("com.debanshu777.runner.native")
-                    compilerOpts("-I${projectDir}/src/iosMain/native")
+                    compilerOpts("-I${projectDir}/src/iosMain/cpp")
                 }
             }
         }

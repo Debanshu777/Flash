@@ -1,3 +1,0 @@
-headers = llama_runner.h
-headerFilter = llama_runner.h
-package = com.debanshu777.runner.native
