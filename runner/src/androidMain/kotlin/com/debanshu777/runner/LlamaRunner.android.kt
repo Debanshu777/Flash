@@ -33,5 +33,3 @@ actual class LlamaRunner {
     private external fun nativeUnloadModel()
     private external fun nativeShutdown()
 }
-
-actual fun getPlatformInfo(): String = "Android ${android.os.Build.VERSION.RELEASE}"

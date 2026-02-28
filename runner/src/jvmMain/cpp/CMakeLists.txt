@@ -1,22 +1,10 @@
-cmake_minimum_required(VERSION 3.22)
-project(llama_runner_desktop LANGUAGES C CXX)
+cmake_minimum_required(VERSION 3.22.1)
+project(llama_runner_desktop VERSION 1.0.0 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# From runner/cmake/llama-runner-desktop/ up to Flash project root
-get_filename_component(REPO_ROOT "${CMAKE_CURRENT_LIST_DIR}/../../.." ABSOLUTE)
-
-set(LLAMA_SRC "${REPO_ROOT}/llama.cpp")
-set(JNI_SRC "${REPO_ROOT}/runner/src/jvmMain/cpp/llama_runner_jni_desktop.cpp")
-
-message(STATUS "REPO_ROOT  = ${REPO_ROOT}")
-message(STATUS "LLAMA_SRC  = ${LLAMA_SRC}")
-message(STATUS "JNI_SRC    = ${JNI_SRC}")
-
-if(NOT EXISTS "${JNI_SRC}")
-    message(FATAL_ERROR "JNI source not found: ${JNI_SRC}")
-endif()
+set(LLAMA_SRC ${CMAKE_CURRENT_LIST_DIR}/../../../../llama.cpp)
 
 if(NOT EXISTS "${LLAMA_SRC}/CMakeLists.txt")
     message(FATAL_ERROR "llama.cpp not found at ${LLAMA_SRC}. Please run 'git submodule update --init --recursive'")
@@ -58,7 +46,7 @@ if(JNI_INCLUDE_DIRS STREQUAL "")
     )
 endif()
 
-add_library(llama_runner SHARED "${JNI_SRC}")
+add_library(llama_runner SHARED llama_runner_jni_desktop.cpp)
 
 target_include_directories(llama_runner PRIVATE
     ${LLAMA_SRC}/include

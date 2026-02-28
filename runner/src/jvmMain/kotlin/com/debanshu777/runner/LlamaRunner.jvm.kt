@@ -37,5 +37,3 @@ actual class LlamaRunner {
     private external fun nativeUnloadModel()
     private external fun nativeShutdown()
 }
-
-actual fun getPlatformInfo(): String = "${System.getProperty("os.name")} ${System.getProperty("os.arch")}"

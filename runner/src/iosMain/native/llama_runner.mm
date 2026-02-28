@@ -16,7 +16,7 @@ static struct common_sampler *g_sampler = nullptr;
 #define LOG_I(msg) std::cout << "[LlamaRunner] " << msg << std::endl
 #define LOG_E(msg) std::cerr << "[LlamaRunner] ERROR: " << msg << std::endl
 
-static std::string truncate_for_log(const std::string& s, size_t max_len = 80) {
+static std::string truncate_for_log(const std::string &s, size_t max_len = 80) {
     if (s.size() <= max_len) return s;
     return s.substr(0, max_len) + "...";
 }
@@ -73,7 +73,8 @@ int llama_runner_load_model(const char *model_path) {
     sparams.temp = 0.3f;
     g_sampler = common_sampler_init(g_model, sparams);
 
-    LOG_I("load: Model ready (vocab_size=" << llama_vocab_n_tokens(llama_model_get_vocab(g_model)) << ")");
+    LOG_I("load: Model ready (vocab_size=" << llama_vocab_n_tokens(llama_model_get_vocab(g_model))
+                                           << ")");
     return 1;
 }
 
@@ -98,7 +99,8 @@ char *llama_runner_generate_text(const char *prompt, int max_tokens) {
     llama_memory_clear(llama_get_memory(g_context), false);
 
     std::string promptStr(prompt);
-    LOG_I("generate: input prompt_len=" << promptStr.size() << " preview=\"" << truncate_for_log(promptStr) << "\"");
+    LOG_I("generate: input prompt_len=" << promptStr.size() << " preview=\""
+                                        << truncate_for_log(promptStr) << "\"");
 
     const llama_vocab *vocab = llama_model_get_vocab(g_model);
     std::vector<llama_token> tokens = common_tokenize(g_context, promptStr, true, true);
@@ -166,7 +168,8 @@ char *llama_runner_generate_text(const char *prompt, int max_tokens) {
     auto t1 = std::chrono::steady_clock::now();
     auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
     LOG_I("generate: done n_tokens=" << n_generated << " output_len=" << result.size()
-         << " elapsed_ms=" << elapsed_ms << " preview=\"" << truncate_for_log(result) << "\"");
+                                     << " elapsed_ms=" << elapsed_ms << " preview=\""
+                                     << truncate_for_log(result) << "\"");
 
     return strdup(result.c_str());
 }

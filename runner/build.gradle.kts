@@ -107,7 +107,7 @@ kotlin {
                 commandLine(
                     cmakePath,
                     "--build", cmakeBuildDir.absolutePath,
-                    "--target", "llama_runner_ios",
+                    "--target", "llama_runner",
                     "--verbose"
                 )
             }
@@ -132,7 +132,7 @@ kotlin {
                     }.files.map { file(it.absolutePath) }
 
                     val requiredLibs = listOf(
-                        file("$libPath/libllama_runner_ios.a"),
+                        file("$libPath/libllama_runner.a"),
                         file("$llamaBuild/src/libllama.a"),
                         file("$llamaBuild/common/libcommon.a"),
                         file("$llamaBuild/ggml/src/libggml.a"),
@@ -230,7 +230,7 @@ kotlin {
         .get()
         .asFile
 
-    val desktopJniSourceDir = projectDir.resolve("cmake/llama-runner-desktop")
+    val desktopJniSourceDir = projectDir.resolve("src/jvmMain/cpp")
     val desktopCmakePath = findTool("cmake")
 
     val buildLlamaRunnerDesktop by tasks.registering(Exec::class) {
