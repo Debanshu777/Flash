@@ -10,6 +10,7 @@ import com.debanshu777.huggingfacemanager.api.error.DataError
 import com.debanshu777.huggingfacemanager.api.error.Result
 import com.debanshu777.huggingfacemanager.download.DownloadManager
 import com.debanshu777.huggingfacemanager.download.DownloadMetadataDTO
+import com.debanshu777.huggingfacemanager.download.InsufficientStorageException
 import com.debanshu777.huggingfacemanager.model.ModelDetailResponse
 import com.debanshu777.huggingfacemanager.model.ModelSort
 import com.debanshu777.huggingfacemanager.model.ParameterRange
@@ -20,6 +21,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlin.math.round
 
 data class GgufFileUiState(
     val path: String,
@@ -79,6 +81,9 @@ class ModelViewModel(
 
     private val _isDownloading = MutableStateFlow(false)
     val isDownloading: StateFlow<Boolean> = _isDownloading.asStateFlow()
+
+    private val _downloadError = MutableStateFlow<String?>(null)
+    val downloadError: StateFlow<String?> = _downloadError.asStateFlow()
 
     fun loadModels() {
         viewModelScope.launch {
@@ -200,6 +205,7 @@ class ModelViewModel(
         if (_isDownloading.value) return
         viewModelScope.launch {
             _isDownloading.update { true }
+            _downloadError.update { null }
             try {
                 downloadManager.download(modelId, path, metadata).collect { progress ->
                     _ggufFiles.update { list ->
@@ -230,12 +236,32 @@ class ModelViewModel(
                         }
                     }
                 }
-            } catch (e: Exception) {
-                _detailError.update { "Download failed. Please try again." }
+            } catch (e: InsufficientStorageException) {
+                val required = formatBytes(e.requiredBytes)
+                val available = formatBytes(e.availableBytes)
+                _downloadError.update {
+                    "Not enough storage space. Need $required but only $available is available."
+                }
+                _ggufFiles.update { list ->
+                    list.map { file ->
+                        if (file.path == path) file.copy(progress = null) else file
+                    }
+                }
+            } catch (_: Exception) {
+                _downloadError.update { "Download failed. Please check your connection and try again." }
+                _ggufFiles.update { list ->
+                    list.map { file ->
+                        if (file.path == path) file.copy(progress = null) else file
+                    }
+                }
             } finally {
                 _isDownloading.update { false }
             }
         }
+    }
+
+    fun clearDownloadError() {
+        _downloadError.update { null }
     }
 
     fun clearDetailError() {
@@ -299,5 +325,23 @@ class ModelViewModel(
 
     fun clearSearchError() {
         _searchError.update { null }
+    }
+
+    private fun formatBytes(bytes: Long): String {
+        if (bytes <= 0L) return "0 B"
+        val units = listOf("B", "KB", "MB", "GB", "TB")
+        var value = bytes.toDouble()
+        var unitIndex = 0
+        while (value >= 1024.0 && unitIndex < units.lastIndex) {
+            value /= 1024.0
+            unitIndex++
+        }
+        val display = if (value >= 100 || unitIndex == 0) {
+            value.toInt().toString()
+        } else {
+            val rounded = round(value * 10.0) / 10.0
+            if (rounded % 1.0 == 0.0) rounded.toInt().toString() else rounded.toString()
+        }
+        return "$display ${units[unitIndex]}"
     }
 }

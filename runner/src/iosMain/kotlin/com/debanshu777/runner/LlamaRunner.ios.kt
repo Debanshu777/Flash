@@ -16,15 +16,26 @@ actual class LlamaRunner {
     }
 
     @OptIn(ExperimentalForeignApi::class)
-    actual fun loadModel(modelPath: String): Boolean = llama_runner_load_model(modelPath) != 0
+    actual fun loadModel(
+        modelPath: String,
+        nCtx: Int,
+        nThreads: Int,
+        nBatch: Int,
+        nGpuLayers: Int,
+        temperature: Float,
+    ): Boolean {
+        validateLoadModelArgs(modelPath)
+        return llama_runner_load_model(modelPath, nCtx, nThreads, nBatch, nGpuLayers, temperature) != 0
+    }
 
     @OptIn(ExperimentalForeignApi::class)
     actual fun generateText(
         prompt: String,
         maxTokens: Int,
+        temperature: Float,
     ): String {
-        if (prompt.isBlank() || maxTokens <= 0) return ""
-        val result = llama_runner_generate_text(prompt, maxTokens)
+        validateGenerateArgs(prompt, maxTokens)
+        val result = llama_runner_generate_text(prompt, maxTokens, temperature)
         return if (result != null) {
             try {
                 result.toKString()

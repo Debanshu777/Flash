@@ -7,12 +7,16 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -31,43 +35,60 @@ fun DetailsScreen(
     val detailError by viewModel.detailError.collectAsState()
     val ggufFiles by viewModel.ggufFiles.collectAsState()
     val isDownloading by viewModel.isDownloading.collectAsState()
+    val downloadError by viewModel.downloadError.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(modelId) {
         viewModel.loadDetail(modelId)
     }
 
-    Column(modifier = modifier.fillMaxSize()) {
-        Box(
+    LaunchedEffect(downloadError) {
+        val error = downloadError ?: return@LaunchedEffect
+        snackbarHostState.showSnackbar(error)
+        viewModel.clearDownloadError()
+    }
+
+    Scaffold(
+        modifier = modifier.fillMaxSize(),
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
+    ) { innerPadding ->
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(8.dp)
+                .fillMaxSize()
+                .padding(innerPadding)
         ) {
-            TextButton(onClick = onBack) {
-                Text("Back")
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp)
+            ) {
+                TextButton(onClick = onBack) {
+                    Text("Back")
+                }
             }
-        }
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f),
-            contentAlignment = Alignment.Center
-        ) {
-            when {
-                isDetailLoading -> CircularProgressIndicator()
-                detailError != null -> Text(
-                    text = detailError ?: "Could not load model details. Please try again.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.error
-                )
-                modelDetail != null -> ModelDetailContent(
-                    model = modelDetail,
-                    ggufFiles = ggufFiles,
-                    isDownloading = isDownloading,
-                    onDownloadClick = { modelId, path, metadata -> 
-                        viewModel.startDownload(modelId, path, metadata) 
-                    },
-                    modifier = Modifier.fillMaxSize()
-                )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                contentAlignment = Alignment.Center
+            ) {
+                when {
+                    isDetailLoading -> CircularProgressIndicator()
+                    detailError != null -> Text(
+                        text = detailError ?: "Could not load model details. Please try again.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                    modelDetail != null -> ModelDetailContent(
+                        model = modelDetail,
+                        ggufFiles = ggufFiles,
+                        isDownloading = isDownloading,
+                        onDownloadClick = { modelId, path, metadata ->
+                            viewModel.startDownload(modelId, path, metadata)
+                        },
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
             }
         }
     }

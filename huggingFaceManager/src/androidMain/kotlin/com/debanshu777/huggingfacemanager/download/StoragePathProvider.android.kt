@@ -2,6 +2,7 @@ package com.debanshu777.huggingfacemanager.download
 
 import android.content.Context
 import android.os.Environment
+import android.os.StatFs
 import java.io.File
 
 class AndroidStoragePathProvider(private val context: Context) : StoragePathProvider {
@@ -18,6 +19,15 @@ class AndroidStoragePathProvider(private val context: Context) : StoragePathProv
         File(context.filesDir, "databases").apply { mkdirs() }.absolutePath + "/flash.db"
     
     override fun fileExists(path: String): Boolean = File(path).exists()
+
+    override fun getAvailableStorageBytes(): Long {
+        val base = when {
+            Environment.getExternalStorageState() == Environment.MEDIA_MOUNTED ->
+                context.getExternalFilesDir(null)
+            else -> null
+        } ?: context.filesDir
+        return StatFs(base.absolutePath).availableBytes
+    }
 
     override fun isModelFileReadable(path: String): Boolean {
         val file = File(path)

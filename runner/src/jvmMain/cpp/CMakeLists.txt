@@ -4,22 +4,13 @@ project(llama_runner_desktop VERSION 1.0.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(LLAMA_SRC ${CMAKE_CURRENT_LIST_DIR}/../../../../llama.cpp)
-
-if(NOT EXISTS "${LLAMA_SRC}/CMakeLists.txt")
-    message(FATAL_ERROR "llama.cpp not found at ${LLAMA_SRC}. Please run 'git submodule update --init --recursive'")
-endif()
-
-# llama.cpp build options for desktop
 set(LLAMA_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(LLAMA_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(LLAMA_BUILD_SERVER OFF CACHE BOOL "" FORCE)
-set(LLAMA_BUILD_COMMON ON CACHE BOOL "" FORCE)
-set(LLAMA_CURL OFF CACHE BOOL "" FORCE)
 set(GGML_OPENMP OFF CACHE BOOL "" FORCE)
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 
-add_subdirectory("${LLAMA_SRC}" "${CMAKE_BINARY_DIR}/llama-build")
+include("${CMAKE_CURRENT_LIST_DIR}/../../commonCpp/LlamaRunnerCommon.cmake")
 
 # Find JNI headers manually (we only need includes, not AWT/JVM libs - JVM provides JNI at runtime)
 # FindJNI often fails with "missing: AWT JVM" when JAVA_HOME points to JRE or non-standard JDK layout
@@ -46,13 +37,15 @@ if(JNI_INCLUDE_DIRS STREQUAL "")
     )
 endif()
 
-add_library(llama_runner SHARED llama_runner_jni_desktop.cpp)
+add_library(
+    llama_runner
+    SHARED
+    ${LLAMA_RUNNER_CORE_SOURCES}
+    ${LLAMA_RUNNER_JNI_SOURCE}
+)
 
 target_include_directories(llama_runner PRIVATE
-    ${LLAMA_SRC}/include
-    ${LLAMA_SRC}/common
-    ${LLAMA_SRC}/ggml/include
-    ${LLAMA_SRC}/ggml/src
+    ${LLAMA_RUNNER_INCLUDE_DIRS}
     ${JNI_INCLUDE_DIRS}
 )
 

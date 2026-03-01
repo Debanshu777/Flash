@@ -242,7 +242,7 @@ fun ChatScreen(
                         scope.launch(llamaDispatcher) {
                             try {
                                 log("generate", "start", "maxTokens=100")
-                                val wrappedPrompt = "Question:\n$userMessage\n\nAnswer:\n"
+                                val wrappedPrompt = "<|im_start|>user\n$userMessage<|im_end|>\n<|im_start|>assistant\n"
                                 val response = runner.generateText(wrappedPrompt, maxTokens = 100)
                                 log("output", "response_len=${response.length}", "preview=${truncate(response)}")
                                 withContext(Dispatchers.Main) {

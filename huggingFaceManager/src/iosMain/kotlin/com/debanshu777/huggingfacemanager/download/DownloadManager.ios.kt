@@ -2,8 +2,9 @@ package com.debanshu777.huggingfacemanager.download
 
 import com.debanshu777.huggingfacemanager.download.StoragePathProvider
 import com.debanshu777.huggingfacemanager.createPlatformHttpClient
-import io.ktor.client.request.get
+import io.ktor.client.request.prepareGet
 import io.ktor.client.statement.bodyAsChannel
+import io.ktor.client.statement.execute
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.utils.io.readAvailable
 import kotlinx.cinterop.BetaInteropApi
@@ -11,7 +12,7 @@ import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.usePinned
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.channelFlow
 import platform.Foundation.*
 
 actual class DownloadManager actual constructor(
@@ -31,7 +32,7 @@ actual class DownloadManager actual constructor(
         modelId: String,
         path: String,
         metadata: DownloadMetadataDTO
-    ): Flow<DownloadProgressDTO> = flow {
+    ): Flow<DownloadProgressDTO> = channelFlow {
         val filename = path.substringAfterLast('/').ifEmpty { path }
         val dirPath = pathProvider.getModelsStorageDirectory(modelId)
         val filePath = "$dirPath/$filename"
@@ -39,42 +40,53 @@ actual class DownloadManager actual constructor(
         val fileManager = NSFileManager.defaultManager
         fileManager.createDirectoryAtPath(dirPath, true, null, null)
         
-        val url = "$baseUrl/$modelId/resolve/main/$path?download=true"
+        val requiredBytes = metadata.sizeBytes
+        if (requiredBytes != null && requiredBytes > 0L) {
+            val availableBytes = pathProvider.getAvailableStorageBytes()
+            if (availableBytes < requiredBytes) {
+                throw InsufficientStorageException(requiredBytes, availableBytes)
+            }
+        }
 
-        val response = httpClient.get(url)
-        val contentLength = response.headers["Content-Length"]?.toLongOrNull()
-        val channel = response.bodyAsChannel()
-        val buffer = ByteArray(8192)
-        var bytesReceived = 0L
+        val url = "$baseUrl/$modelId/resolve/main/$path?download=true"
 
         try {
             fileManager.createFileAtPath(filePath, null, null)
             val fileHandle = NSFileHandle.fileHandleForWritingAtPath(filePath)
-            
-            while (true) {
-                val n = channel.readAvailable(buffer)
-                if (n <= 0) break
-                
-                val nsData = buffer.usePinned { pinned ->
-                    NSData.create(bytes = pinned.addressOf(0), length = n.toULong())
+            try {
+                httpClient.prepareGet(url).execute { response ->
+                    val contentLength = response.headers["Content-Length"]?.toLongOrNull()
+                    val channel = response.bodyAsChannel()
+                    val buffer = ByteArray(8192)
+                    var bytesReceived = 0L
+
+                    while (true) {
+                        val n = channel.readAvailable(buffer)
+                        if (n <= 0) break
+
+                        val nsData = buffer.usePinned { pinned ->
+                            NSData.create(bytes = pinned.addressOf(0), length = n.toULong())
+                        }
+                        fileHandle?.writeData(nsData)
+
+                        bytesReceived += n
+                        val pct = if (contentLength != null && contentLength > 0)
+                            (bytesReceived.toFloat() / contentLength * 100f).coerceIn(0f, 100f)
+                        else -1f
+                        send(DownloadProgressDTO(bytesReceived, contentLength, pct))
+                    }
+
+                    // Emit final progress with localPath set
+                    send(DownloadProgressDTO(
+                        bytesReceived = bytesReceived,
+                        contentLength = contentLength,
+                        percentage = 100f,
+                        localPath = filePath
+                    ))
                 }
-                fileHandle?.writeData(nsData)
-                
-                bytesReceived += n
-                val pct = if (contentLength != null && contentLength > 0)
-                    (bytesReceived.toFloat() / contentLength * 100f).coerceIn(0f, 100f)
-                else -1f
-                emit(DownloadProgressDTO(bytesReceived, contentLength, pct))
+            } finally {
+                fileHandle?.closeFile()
             }
-            fileHandle?.closeFile()
-            
-            // Emit final progress with localPath set
-            emit(DownloadProgressDTO(
-                bytesReceived = bytesReceived,
-                contentLength = contentLength,
-                percentage = 100f,
-                localPath = filePath
-            ))
         } catch (e: Exception) {
             fileManager.removeItemAtPath(filePath, null)
             throw e
