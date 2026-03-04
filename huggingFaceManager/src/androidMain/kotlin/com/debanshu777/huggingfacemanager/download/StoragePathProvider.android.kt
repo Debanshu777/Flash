@@ -16,7 +16,7 @@ class AndroidStoragePathProvider(private val context: Context) : StoragePathProv
     }
     
     override fun getDatabasePath(): String =
-        File(context.filesDir, "databases").apply { mkdirs() }.absolutePath + "/flash.db"
+        File(context.filesDir, "databases").apply { mkdirs() }.absolutePath + "/caraml.db"
     
     override fun fileExists(path: String): Boolean = File(path).exists()
 

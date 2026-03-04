@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXFileReference section */
-		4DC5E6312445AEA19C8F9E85 /* Flash.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Flash.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		4DC5E6312445AEA19C8F9E85 /* CaraML.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CaraML.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -59,7 +59,7 @@
 		DCF95156289A5869106A4796 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				4DC5E6312445AEA19C8F9E85 /* Flash.app */,
+				4DC5E6312445AEA19C8F9E85 /* CaraML.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -87,7 +87,7 @@
 			packageProductDependencies = (
 			);
 			productName = iosApp;
-			productReference = 4DC5E6312445AEA19C8F9E85 /* Flash.app */;
+			productReference = 4DC5E6312445AEA19C8F9E85 /* CaraML.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */

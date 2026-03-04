@@ -41,7 +41,7 @@ kotlin {
         target.binaries.framework {
             baseName = "ComposeApp"
             isStatic = false
-            freeCompilerArgs += "-Xbinary=bundleId=com.debanshu777.flash"
+            freeCompilerArgs += "-Xbinary=bundleId=com.debanshu777.caraml"
             freeCompilerArgs += "-Xoverride-konan-properties=osVersionMin.ios_simulator_arm64=$minIos;osVersionMin.ios_arm64=$minIos"
             linkerOpts(
                 "-L$libPath",
@@ -101,11 +101,11 @@ kotlin {
 }
 
 android {
-    namespace = "com.debanshu777.flash"
+    namespace = "com.debanshu777.caraml"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
 
     defaultConfig {
-        applicationId = "com.debanshu777.flash"
+        applicationId = "com.debanshu777.caraml"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1
@@ -129,11 +129,11 @@ android {
 
 compose.desktop {
     application {
-        mainClass = "com.debanshu777.flash.MainKt"
+        mainClass = "com.debanshu777.caraml.MainKt"
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "com.debanshu777.flash"
+            packageName = "com.debanshu777.caraml"
             packageVersion = "1.0.0"
         }
     }
@@ -156,7 +156,7 @@ tasks.withType(org.gradle.api.tasks.JavaExec::class.java).configureEach {
         dependsOn(":runner:compileLlamaRunnerDesktop")
         jvmArgs(
             "-Djava.library.path=$nativeDir",
-            "-Dflash.native.lib.dir=$nativeDir"
+            "-Dcaraml.native.lib.dir=$nativeDir"
         )
     }
 }

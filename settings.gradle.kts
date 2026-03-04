@@ -1,4 +1,4 @@
-rootProject.name = "Flash"
+rootProject.name = "CaraML"
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
 pluginManagement {

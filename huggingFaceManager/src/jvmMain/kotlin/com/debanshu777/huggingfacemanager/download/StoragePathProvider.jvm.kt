@@ -7,10 +7,10 @@ class JvmStoragePathProvider : StoragePathProvider {
         val home = System.getProperty("user.home") ?: ""
         val dir = when {
             System.getProperty("os.name").orEmpty().lowercase().contains("mac") ->
-                File(home, "Library/Application Support/Flash")
+                File(home, "Library/Application Support/CaraML")
             System.getProperty("os.name").orEmpty().lowercase().contains("win") ->
-                File(System.getenv("APPDATA") ?: home, "Flash")
-            else -> File(home, ".config/Flash")
+                File(System.getenv("APPDATA") ?: home, "CaraML")
+            else -> File(home, ".config/CaraML")
         }
         dir.apply { mkdirs() }
     }
@@ -19,7 +19,7 @@ class JvmStoragePathProvider : StoragePathProvider {
         File(appDir, "models/$modelId").apply { mkdirs() }.absolutePath
     
     override fun getDatabasePath(): String =
-        File(appDir, "databases").apply { mkdirs() }.absolutePath + "/flash.db"
+        File(appDir, "databases").apply { mkdirs() }.absolutePath + "/caraml.db"
     
     override fun fileExists(path: String): Boolean = File(path).exists()
 

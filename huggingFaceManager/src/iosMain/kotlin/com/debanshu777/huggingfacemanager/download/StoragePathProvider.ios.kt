@@ -23,7 +23,7 @@ class IosStoragePathProvider : StoragePathProvider {
             .URLForDirectory(NSDocumentDirectory, NSUserDomainMask, null, false, null)!!.path!!
         val dbDir = "$docs/databases"
         NSFileManager.defaultManager.createDirectoryAtPath(dbDir, true, null, null)
-        return "$dbDir/flash.db"
+        return "$dbDir/caraml.db"
     }
     
     @OptIn(ExperimentalForeignApi::class)
