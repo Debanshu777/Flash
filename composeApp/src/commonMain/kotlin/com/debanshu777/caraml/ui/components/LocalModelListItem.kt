@@ -10,8 +10,10 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.unit.dp
 import com.debanshu777.caraml.storage.LocalModelEntity
+import com.debanshu777.huggingfacemanager.model.PipelineTag
 import kotlin.math.roundToInt
 
 @Composable
@@ -20,10 +22,13 @@ fun LocalModelListItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val isSupported = PipelineTag.isSupported(model.pipelineTag)
+    
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .alpha(if (isSupported) 1f else 0.38f)
+            .clickable(enabled = isSupported, onClick = onClick)
     ) {
         Column(
             modifier = Modifier
@@ -56,6 +61,14 @@ fun LocalModelListItem(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 4.dp)
             )
+            if (!isSupported) {
+                Text(
+                    text = "Chat not available for this model type",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
         }
     }
     HorizontalDivider()
