@@ -21,8 +21,8 @@ private val config =
         serializersModule =
             SerializersModule {
                 polymorphic(NavKey::class) {
+                    subclass(NavigableScreen.Home::class, serializer<NavigableScreen.Home>())
                     subclass(NavigableScreen.Search::class, serializer<NavigableScreen.Search>())
-                    subclass(NavigableScreen.DownloadedModels::class, serializer<NavigableScreen.DownloadedModels>())
                     subclass(NavigableScreen.Details::class, serializer<NavigableScreen.Details>())
                     subclass(NavigableScreen.Chat::class, serializer<NavigableScreen.Chat>())
                 }
@@ -35,7 +35,7 @@ fun App(
 ) {
     MaterialTheme {
         Surface(modifier = Modifier.fillMaxSize()) {
-            val backStack = rememberNavBackStack(config, NavigableScreen.Search)
+            val backStack = rememberNavBackStack(config, NavigableScreen.Home)
             NavigationHost(
                 modifier = Modifier.fillMaxSize(),
                 backStack = backStack,

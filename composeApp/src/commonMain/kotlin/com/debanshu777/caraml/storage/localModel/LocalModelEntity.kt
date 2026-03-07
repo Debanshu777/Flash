@@ -15,4 +15,5 @@ data class LocalModelEntity(
     @ColumnInfo(name = "author") val author: String?,
     @ColumnInfo(name = "library_name") val libraryName: String?,
     @ColumnInfo(name = "pipeline_tag") val pipelineTag: String?,
+    @ColumnInfo(name = "usage_count", defaultValue = "0") val usageCount: Long = 0,
 )

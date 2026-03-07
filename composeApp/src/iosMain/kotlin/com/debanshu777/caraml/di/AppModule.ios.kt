@@ -8,10 +8,8 @@ import com.debanshu777.huggingfacemanager.download.IosStoragePathProvider
 import org.koin.dsl.module
 
 actual val platformHuggingFaceModule = module {
-    // Storage path provider (iOS-specific)
     single<StoragePathProvider> { IosStoragePathProvider() }
-    
-    // Database (iOS-specific)
+
     single<AppDatabase> {
         val pathProvider = get<StoragePathProvider>()
         val dbPath = pathProvider.getDatabasePath()

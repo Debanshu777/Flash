@@ -10,8 +10,9 @@ import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.debanshu777.caraml.ui.screens.ChatScreen
 import com.debanshu777.caraml.ui.screens.DetailsScreen
-import com.debanshu777.caraml.ui.screens.DownloadedModelsScreen
 import com.debanshu777.caraml.ui.screens.SearchScreen
+import com.debanshu777.caraml.ui.screens.StandaloneChatScreen
+import com.debanshu777.caraml.ui.viewmodel.ChatViewModel
 import com.debanshu777.caraml.ui.viewmodel.DownloadedModelsViewModel
 import com.debanshu777.caraml.ui.viewmodel.ModelViewModel
 import com.debanshu777.huggingfacemanager.download.StoragePathProvider
@@ -35,20 +36,25 @@ fun NavigationHost(
             ),
         entryProvider =
             entryProvider {
-                entry(NavigableScreen.Search) {
-                    val modelViewModel: ModelViewModel = koinViewModel()
-                    SearchScreen(
-                        viewModel = modelViewModel,
-                        onNavigateToDetails = { backStack.add(NavigableScreen.Details(it)) },
-                        onNavigateToDownloads = { backStack.add(NavigableScreen.DownloadedModels) },
+                entry(NavigableScreen.Home) {
+                    val chatViewModel: ChatViewModel = koinInject()
+                    ChatScreen(
+                        viewModel = chatViewModel,
+                        onNavigateToSearch = { backStack.add(NavigableScreen.Search) },
+                        storagePathProvider = storagePathProvider,
                     )
                 }
-                entry(NavigableScreen.DownloadedModels) {
+                entry(NavigableScreen.Search) {
+                    val modelViewModel: ModelViewModel = koinViewModel()
                     val downloadedModelsViewModel: DownloadedModelsViewModel = koinViewModel()
-                    DownloadedModelsScreen(
-                        viewModel = downloadedModelsViewModel,
-                        onNavigateToDetails = { path, id ->
-                            backStack.add(NavigableScreen.Chat(path, id))
+                    val chatViewModel: ChatViewModel = koinInject()
+                    SearchScreen(
+                        modelViewModel = modelViewModel,
+                        downloadedModelsViewModel = downloadedModelsViewModel,
+                        onNavigateToDetails = { backStack.add(NavigableScreen.Details(it)) },
+                        onSelectModelAndGoBack = { model ->
+                            chatViewModel.selectModel(model)
+                            backStack.removeLastOrNull()
                         },
                         onBack = { backStack.removeLastOrNull() },
                     )
@@ -62,7 +68,7 @@ fun NavigationHost(
                     )
                 }
                 entry<NavigableScreen.Chat> { key ->
-                    ChatScreen(
+                    StandaloneChatScreen(
                         modelPath = key.modelPath,
                         modelId = key.modelId,
                         onBack = { backStack.removeLastOrNull() },

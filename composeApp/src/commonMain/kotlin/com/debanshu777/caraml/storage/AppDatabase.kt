@@ -8,7 +8,7 @@ import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import com.debanshu777.caraml.storage.localModel.LocalModelDao
 import com.debanshu777.caraml.storage.localModel.LocalModelEntity
 
-@Database(entities = [LocalModelEntity::class], version = 1, exportSchema = false)
+@Database(entities = [LocalModelEntity::class], version = 2, exportSchema = false)
 @ConstructedBy(AppDatabaseConstructor::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun localModelDao(): LocalModelDao
@@ -22,5 +22,6 @@ expect object AppDatabaseConstructor : RoomDatabaseConstructor<AppDatabase> {
 fun getRoomDatabase(builder: RoomDatabase.Builder<AppDatabase>): AppDatabase {
     return builder
         .setDriver(BundledSQLiteDriver())
+        .fallbackToDestructiveMigration(dropAllTables = true)
         .build()
 }

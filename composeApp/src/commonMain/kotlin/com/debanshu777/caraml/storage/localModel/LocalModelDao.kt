@@ -17,6 +17,9 @@ interface LocalModelDao {
     @Query("SELECT * FROM local_model")
     fun getAll(): Flow<List<LocalModelEntity>>
 
-    @Query("SELECT * FROM local_model ORDER BY id DESC")
+    @Query("SELECT * FROM local_model ORDER BY usage_count DESC, id DESC")
     fun getAllDownloadedFiles(): Flow<List<LocalModelEntity>>
+
+    @Query("UPDATE local_model SET usage_count = usage_count + 1 WHERE model_id = :modelId AND filename = :filename")
+    suspend fun incrementUsageCount(modelId: String, filename: String)
 }

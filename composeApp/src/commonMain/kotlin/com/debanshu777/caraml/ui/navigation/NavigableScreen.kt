@@ -5,10 +5,10 @@ import kotlinx.serialization.Serializable
 
 sealed interface NavigableScreen : NavKey {
     @Serializable
-    data object Search : NavigableScreen
+    data object Home : NavigableScreen
 
     @Serializable
-    data object DownloadedModels : NavigableScreen
+    data object Search : NavigableScreen
 
     @Serializable
     data class Details(val modelId: String) : NavigableScreen

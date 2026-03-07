@@ -2,6 +2,7 @@ package com.debanshu777.caraml.di
 
 import com.debanshu777.caraml.storage.AppDatabase
 import com.debanshu777.caraml.storage.localModel.LocalModelRepository
+import com.debanshu777.caraml.ui.viewmodel.ChatViewModel
 import com.debanshu777.caraml.ui.viewmodel.DownloadedModelsViewModel
 import com.debanshu777.caraml.ui.viewmodel.ModelViewModel
 import com.debanshu777.huggingfacemanager.createHuggingFaceApi
@@ -14,18 +15,14 @@ expect val platformHuggingFaceModule: Module
 
 val appModule = module {
     includes(platformHuggingFaceModule)
-    
-    // DAO (database is provided by platform module)
+
     single { get<AppDatabase>().localModelDao() }
-    
-    // Repositories and managers
+
     single { LocalModelRepository(get()) }
     single { DownloadManager(get()) }
-    
-    // API
+
     single { createHuggingFaceApi() }
-    
-    // ViewModels
+
     viewModel { 
         ModelViewModel(
             api = get(),
@@ -38,5 +35,11 @@ val appModule = module {
             localModelRepository = get(),
             storagePathProvider = get()
         ) 
+    }
+    single {
+        ChatViewModel(
+            localModelRepository = get(),
+            storagePathProvider = get()
+        )
     }
 }

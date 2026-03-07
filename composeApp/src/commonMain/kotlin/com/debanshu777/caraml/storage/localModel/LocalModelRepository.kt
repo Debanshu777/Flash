@@ -9,6 +9,10 @@ class LocalModelRepository(private val dao: LocalModelDao) {
     fun getAllDownloadedFiles(): Flow<List<LocalModelEntity>> =
         dao.getAllDownloadedFiles()
 
+    suspend fun incrementUsageCount(modelId: String, filename: String) {
+        dao.incrementUsageCount(modelId, filename)
+    }
+
     suspend fun insert(
         modelId: String,
         filename: String,

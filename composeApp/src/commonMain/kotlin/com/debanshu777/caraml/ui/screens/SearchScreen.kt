@@ -10,31 +10,86 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Download
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.PrimaryTabRow
+import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.debanshu777.caraml.storage.localModel.LocalModelEntity
+import com.debanshu777.caraml.ui.components.LocalModelListItem
 import com.debanshu777.caraml.ui.components.ModelListItem
 import com.debanshu777.caraml.ui.components.SearchBar
 import com.debanshu777.caraml.ui.components.SearchModelListItem
 import com.debanshu777.caraml.ui.components.SortFilterChips
+import com.debanshu777.caraml.ui.viewmodel.DownloadedModelsViewModel
 import com.debanshu777.caraml.ui.viewmodel.ModelViewModel
+import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchScreen(
+    modelViewModel: ModelViewModel,
+    downloadedModelsViewModel: DownloadedModelsViewModel,
+    onNavigateToDetails: (String) -> Unit,
+    onSelectModelAndGoBack: (LocalModelEntity) -> Unit,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var selectedTabIndex by remember { mutableStateOf(0) }
+    val tabs = listOf("Search", "Downloaded")
+
+    Column(modifier = modifier.fillMaxSize()) {
+        TopAppBar(
+            title = { Text("Models") },
+            navigationIcon = {
+                TextButton(onClick = onBack) {
+                    Text("← Back")
+                }
+            }
+        )
+
+        PrimaryTabRow(selectedTabIndex = selectedTabIndex) {
+            tabs.forEachIndexed { index, title ->
+                Tab(
+                    selected = selectedTabIndex == index,
+                    onClick = { selectedTabIndex = index },
+                    text = { Text(title) }
+                )
+            }
+        }
+
+        when (selectedTabIndex) {
+            0 -> SearchTabContent(
+                viewModel = modelViewModel,
+                onNavigateToDetails = onNavigateToDetails,
+                modifier = Modifier.fillMaxSize()
+            )
+            1 -> DownloadedTabContent(
+                viewModel = downloadedModelsViewModel,
+                onSelectModelAndGoBack = onSelectModelAndGoBack,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+    }
+}
+
+@Composable
+private fun SearchTabContent(
     viewModel: ModelViewModel,
     onNavigateToDetails: (String) -> Unit,
-    onNavigateToDownloads: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val searchQuery by viewModel.searchQuery.collectAsState()
@@ -49,9 +104,7 @@ fun SearchScreen(
 
     val isSearchMode = searchQuery.isNotEmpty() || searchResponse != null
 
-    Column(
-        modifier = modifier.fillMaxSize()
-    ) {
+    Column(modifier = modifier) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -68,20 +121,13 @@ fun SearchScreen(
                         viewModel.loadModels()
                     }
                 },
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.fillMaxWidth()
             )
-            Spacer(modifier = Modifier.width(8.dp))
-            Button(onClick = onNavigateToDownloads) {
-                Icon(
-                    imageVector = Icons.Default.Download,
-                    contentDescription = "My Downloads"
-                )
-            }
         }
 
         if (isSearchMode) {
             if (searchResponse != null || searchError != null) {
-                Column {
+                Column(modifier = Modifier.padding(horizontal = 16.dp)) {
                     Text(
                         text = "Results for \"$searchQuery\" (${searchResponse?.modelsCount ?: 0} models)",
                         style = MaterialTheme.typography.titleMedium,
@@ -174,6 +220,49 @@ fun SearchScreen(
                             }
                         }
                     }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DownloadedTabContent(
+    viewModel: DownloadedModelsViewModel,
+    onSelectModelAndGoBack: (LocalModelEntity) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val downloadedModels by viewModel.downloadedModels.collectAsState()
+    val scope = rememberCoroutineScope()
+
+    Box(
+        modifier = modifier,
+        contentAlignment = if (downloadedModels.isEmpty()) Alignment.Center else Alignment.TopStart
+    ) {
+        if (downloadedModels.isEmpty()) {
+            Text(
+                text = "No downloaded models yet.\nBrowse and download models to see them here.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(16.dp)
+            )
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize()
+            ) {
+                items(
+                    items = downloadedModels,
+                    key = { it.id }
+                ) { model ->
+                    LocalModelListItem(
+                        model = model,
+                        onClick = {
+                            scope.launch {
+                                viewModel.trackModelUsage(model)
+                            }
+                            onSelectModelAndGoBack(model)
+                        }
+                    )
                 }
             }
         }
