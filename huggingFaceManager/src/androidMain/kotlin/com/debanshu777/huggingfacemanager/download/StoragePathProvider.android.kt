@@ -29,6 +29,15 @@ class AndroidStoragePathProvider(private val context: Context) : StoragePathProv
         return StatFs(base.absolutePath).availableBytes
     }
 
+    override fun getTotalStorageBytes(): Long {
+        val base = when {
+            Environment.getExternalStorageState() == Environment.MEDIA_MOUNTED ->
+                context.getExternalFilesDir(null)
+            else -> null
+        } ?: context.filesDir
+        return StatFs(base.absolutePath).totalBytes
+    }
+
     override fun isModelFileReadable(path: String): Boolean {
         val file = File(path)
         return file.exists() && file.isFile && file.canRead()

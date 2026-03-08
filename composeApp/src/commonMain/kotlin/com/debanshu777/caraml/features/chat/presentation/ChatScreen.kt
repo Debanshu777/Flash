@@ -60,12 +60,7 @@ fun ChatScreenContent(
     }
 
     Column(modifier = modifier.fillMaxSize()) {
-        ModelSelectorTopBar(
-            selectedModel = selectedModel,
-            topModels = topModels,
-            onSelectModel = onSelectModel,
-            onDownloadModelClick = onNavigateToSearch
-        )
+        ModelSelectorTopBar()
 
         when (val state = uiState) {
             is ChatUiState.NoModels -> {
@@ -93,6 +88,10 @@ fun ChatScreenContent(
 
                     ChatInputBar(
                         isGenerating = state.isGenerating,
+                        selectedModel = selectedModel,
+                        topModels = topModels,
+                        onSelectModel = onSelectModel,
+                        onDownloadModelClick = onNavigateToSearch,
                         onSendMessage = onSendMessage,
                         onCancelGeneration = onCancelGeneration
                     )

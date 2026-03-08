@@ -39,7 +39,8 @@ val appModule = module {
         ModelViewModel(
             api = get(),
             localModelRepository = get(),
-            downloadManager = get()
+            downloadManager = get(),
+            storagePathProvider = get()
         ) 
     }
     viewModel { 

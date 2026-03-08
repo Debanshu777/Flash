@@ -22,4 +22,7 @@ interface LocalModelDao {
 
     @Query("UPDATE local_model SET usage_count = usage_count + 1 WHERE model_id = :modelId AND filename = :filename")
     suspend fun incrementUsageCount(modelId: String, filename: String)
+
+    @Query("SELECT COALESCE(SUM(size_bytes), 0) FROM local_model")
+    fun getTotalDownloadedSizeBytes(): Flow<Long>
 }

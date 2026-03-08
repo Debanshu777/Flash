@@ -8,6 +8,7 @@ import com.debanshu777.caraml.core.storage.localmodel.LocalModelEntity
 import com.debanshu777.caraml.core.storage.localmodel.LocalModelRepository
 import com.debanshu777.caraml.features.chat.data.ChatMessage
 import com.debanshu777.caraml.features.chat.data.MessageRole
+import com.debanshu777.caraml.features.chat.data.TokenTimer
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
@@ -20,6 +21,7 @@ import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -114,10 +116,13 @@ class ChatViewModel(
             } else state
         }
 
+        val timer = TokenTimer()
+
         generationJob = viewModelScope.launch {
             var wasCancelled = false
             try {
                 inferenceRepository.generateResponse(userMessage.text)
+                    .onEach { timer.onToken() }
                     .conflate()
                     .flowOn(Dispatchers.IO)
                     .collect { token ->
@@ -152,7 +157,14 @@ class ChatViewModel(
                 if (!wasCancelled) {
                     _uiState.update { state ->
                         if (state is ChatUiState.Ready) {
-                            state.copy(isGenerating = false)
+                            val messages = state.messages.toMutableList()
+                            val idx = messages.indexOfFirst { it.id == assistantMessage.id }
+                            if (idx >= 0) {
+                                messages[idx] = messages[idx].copy(
+                                    inferenceMetrics = timer.buildMetrics()
+                                )
+                            }
+                            state.copy(messages = messages, isGenerating = false)
                         } else state
                     }
                 }

@@ -11,14 +11,18 @@ import com.debanshu777.huggingfacemanager.api.error.Result
 import com.debanshu777.huggingfacemanager.download.DownloadManager
 import com.debanshu777.huggingfacemanager.download.DownloadMetadataDTO
 import com.debanshu777.huggingfacemanager.download.InsufficientStorageException
+import com.debanshu777.huggingfacemanager.download.StoragePathProvider
 import com.debanshu777.huggingfacemanager.model.ModelDetailResponse
 import com.debanshu777.huggingfacemanager.model.ModelSort
 import com.debanshu777.huggingfacemanager.model.ParameterRange
 import com.debanshu777.huggingfacemanager.model.ListModelsResponse
 import com.debanshu777.huggingfacemanager.model.SearchModelsResponse
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlin.math.round
@@ -31,11 +35,33 @@ data class GgufFileUiState(
     val progress: Float?
 )
 
+data class StorageInfoUiState(
+    val totalDeviceBytes: Long = 0L,
+    val availableDeviceBytes: Long = 0L,
+    val usedByModelsBytes: Long = 0L
+)
+
 class ModelViewModel(
     private val api: HuggingFaceApi,
     private val localModelRepository: LocalModelRepository,
-    private val downloadManager: DownloadManager
+    private val downloadManager: DownloadManager,
+    private val storagePathProvider: StoragePathProvider
 ) : ViewModel() {
+
+    val storageInfo: StateFlow<StorageInfoUiState> =
+        localModelRepository.getTotalDownloadedSizeBytes()
+            .map { usedBytes ->
+                StorageInfoUiState(
+                    totalDeviceBytes = storagePathProvider.getTotalStorageBytes(),
+                    availableDeviceBytes = storagePathProvider.getAvailableStorageBytes(),
+                    usedByModelsBytes = usedBytes
+                )
+            }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = StorageInfoUiState()
+            )
 
     private val _listParams = MutableStateFlow(
         ListModelsParams(

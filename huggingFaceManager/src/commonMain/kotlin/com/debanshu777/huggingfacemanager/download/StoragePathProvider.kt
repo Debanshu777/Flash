@@ -5,6 +5,7 @@ interface StoragePathProvider {
     fun getDatabasePath(): String
     fun fileExists(path: String): Boolean
     fun getAvailableStorageBytes(): Long
+    fun getTotalStorageBytes(): Long
 
     /**
      * Returns true if the path points to a readable model file (exists, is a file, and can be read).

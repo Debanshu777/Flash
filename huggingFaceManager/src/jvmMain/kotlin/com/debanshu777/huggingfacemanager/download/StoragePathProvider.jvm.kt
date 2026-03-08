@@ -25,6 +25,8 @@ class JvmStoragePathProvider : StoragePathProvider {
 
     override fun getAvailableStorageBytes(): Long = appDir.usableSpace
 
+    override fun getTotalStorageBytes(): Long = appDir.totalSpace
+
     override fun isModelFileReadable(path: String): Boolean {
         val file = File(path)
         return file.exists() && file.isFile && file.canRead()

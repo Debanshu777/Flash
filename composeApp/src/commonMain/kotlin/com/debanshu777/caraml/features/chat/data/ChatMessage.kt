@@ -10,7 +10,8 @@ enum class MessageRole {
 data class ChatMessage(
     val id: String = generateId(),
     val role: MessageRole,
-    val text: String
+    val text: String,
+    val inferenceMetrics: InferenceMetrics? = null
 )
 
 private fun generateId(): String {
