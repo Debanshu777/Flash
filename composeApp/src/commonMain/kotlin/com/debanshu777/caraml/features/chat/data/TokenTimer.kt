@@ -25,6 +25,18 @@ class TokenTimer {
             generationTimeMs = elapsed,
         )
     }
+
+    fun buildLiveMetrics(): Pair<Int, Double> {
+        val first = firstTokenTimeMs ?: return Pair(0, 0.0)
+        val last = lastTokenTimeMs ?: return Pair(0, 0.0)
+        val elapsed = last - first
+        val tokensPerSecond = if (count > 1 && elapsed > 0) {
+            (count - 1) * 1000.0 / elapsed
+        } else {
+            0.0
+        }
+        return Pair(count, tokensPerSecond)
+    }
 }
 
 expect fun currentTimeMillis(): Long

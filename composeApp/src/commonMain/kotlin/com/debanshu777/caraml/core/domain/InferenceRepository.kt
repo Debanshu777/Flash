@@ -14,4 +14,6 @@ interface InferenceRepository {
     fun generateResponse(userPrompt: String, predictLength: Int = 1024): Flow<String>
     fun cancelGeneration()
     fun shutdown()
+    fun getContextUsed(): Int
+    fun getContextLimit(): Int
 }

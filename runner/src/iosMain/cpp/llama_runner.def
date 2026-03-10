@@ -11,3 +11,5 @@ int llama_runner_process_system_prompt(const char* prompt);
 int llama_runner_process_user_prompt(const char* prompt, int predict_length);
 void llama_runner_unload_model(void);
 void llama_runner_shutdown(void);
+int llama_runner_get_context_used(void);
+int llama_runner_get_context_limit(void);

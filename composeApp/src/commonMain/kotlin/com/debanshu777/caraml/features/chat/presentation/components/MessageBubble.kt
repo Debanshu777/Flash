@@ -1,10 +1,18 @@
 package com.debanshu777.caraml.features.chat.presentation.components
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccessTime
+import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material.icons.filled.DataUsage
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -12,6 +20,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.debanshu777.caraml.features.chat.data.ChatMessage
 import com.debanshu777.caraml.features.chat.data.MessageRole
@@ -52,15 +61,64 @@ fun MessageBubble(
                     color = textColor,
                 )
                 if (!isUser && message.inferenceMetrics != null) {
-                    val tpotFormatted = ((message.inferenceMetrics.tpotMs * 10).toInt() / 10.0).toString()
-                    Text(
-                        text = "$tpotFormatted ms/token",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = textColor.copy(alpha = 0.5f),
-                        modifier = Modifier.padding(top = 4.dp)
-                    )
+                    Row(
+                        modifier = Modifier.padding(top = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = "Statistics:",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = textColor.copy(alpha = 0.5f)
+                        )
+                        
+                        val tokensPerSec = ((message.inferenceMetrics.tokensPerSecond * 100).toInt() / 100.0)
+                        StatItem(
+                            icon = Icons.Default.Speed,
+                            text = "$tokensPerSec tokens/s",
+                            textColor = textColor
+                        )
+                        
+                        StatItem(
+                            icon = Icons.Default.DataUsage,
+                            text = "${message.inferenceMetrics.tokenCount} tokens",
+                            textColor = textColor
+                        )
+                        
+                        val timeSec = ((message.inferenceMetrics.generationTimeMs / 10.0).toInt() / 100.0)
+                        StatItem(
+                            icon = Icons.Default.AccessTime,
+                            text = "${timeSec}s",
+                            textColor = textColor
+                        )
+                    }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun StatItem(
+    icon: ImageVector,
+    text: String,
+    textColor: Color,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = textColor.copy(alpha = 0.5f),
+            modifier = Modifier.size(12.dp)
+        )
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelSmall,
+            color = textColor.copy(alpha = 0.5f)
+        )
     }
 }

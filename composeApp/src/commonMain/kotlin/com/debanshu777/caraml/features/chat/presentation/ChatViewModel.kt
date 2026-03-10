@@ -7,6 +7,7 @@ import com.debanshu777.caraml.core.domain.ModelLoadResult
 import com.debanshu777.caraml.core.storage.localmodel.LocalModelEntity
 import com.debanshu777.caraml.core.storage.localmodel.LocalModelRepository
 import com.debanshu777.caraml.features.chat.data.ChatMessage
+import com.debanshu777.caraml.features.chat.data.LiveGenerationStats
 import com.debanshu777.caraml.features.chat.data.MessageRole
 import com.debanshu777.caraml.features.chat.data.TokenTimer
 import kotlinx.coroutines.CancellationException
@@ -133,7 +134,20 @@ class ChatViewModel(
                                 if (idx >= 0) {
                                     messages[idx] = messages[idx].copy(text = messages[idx].text + token)
                                 }
-                                state.copy(messages = messages, isGenerating = true)
+                                
+                                val (tokenCount, tokensPerSecond) = timer.buildLiveMetrics()
+                                val liveStats = LiveGenerationStats(
+                                    contextUsed = inferenceRepository.getContextUsed(),
+                                    contextLimit = inferenceRepository.getContextLimit(),
+                                    outputTokenCount = tokenCount,
+                                    tokensPerSecond = tokensPerSecond
+                                )
+                                
+                                state.copy(
+                                    messages = messages,
+                                    isGenerating = true,
+                                    liveStats = liveStats
+                                )
                             } else state
                         }
                     }
@@ -164,7 +178,11 @@ class ChatViewModel(
                                     inferenceMetrics = timer.buildMetrics()
                                 )
                             }
-                            state.copy(messages = messages, isGenerating = false)
+                            state.copy(
+                                messages = messages,
+                                isGenerating = false,
+                                liveStats = null
+                            )
                         } else state
                     }
                 }

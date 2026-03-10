@@ -80,7 +80,9 @@ fun ModelDetailContent(
         }
         model.cardData?.let { card ->
             DetailRow("License", card.license)
-            DetailRow("Base model", card.baseModel)
+            card.baseModel?.takeIf { it.isNotEmpty() }?.let { models ->
+                DetailRow("Base model", models.joinToString(", "))
+            }
         }
         
         if (ggufFiles.isNotEmpty()) {
@@ -103,10 +105,11 @@ fun ModelDetailContent(
                             model.modelId ?: model.id ?: "",
                             item.path,
                             DownloadMetadataDTO(
-                                item.sizeBytes,
-                                model.author,
-                                model.libraryName,
-                                model.pipelineTag
+                                sizeBytes = item.sizeBytes,
+                                author = model.author,
+                                libraryName = model.libraryName,
+                                pipelineTag = model.pipelineTag,
+                                contextLength = model.gguf?.contextLength
                             )
                         )
                     }

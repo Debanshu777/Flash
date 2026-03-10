@@ -138,3 +138,13 @@ extern "C" JNIEXPORT void JNICALL
 Java_com_debanshu777_runner_LlamaRunner_nativeShutdown(JNIEnv *, jobject) {
     llama_runner_core_shutdown();
 }
+
+extern "C" JNIEXPORT jint JNICALL
+Java_com_debanshu777_runner_LlamaRunner_nativeGetContextUsed(JNIEnv *, jobject) {
+    return static_cast<jint>(llama_runner_core_get_context_used());
+}
+
+extern "C" JNIEXPORT jint JNICALL
+Java_com_debanshu777_runner_LlamaRunner_nativeGetContextLimit(JNIEnv *, jobject) {
+    return static_cast<jint>(llama_runner_core_get_context_limit());
+}

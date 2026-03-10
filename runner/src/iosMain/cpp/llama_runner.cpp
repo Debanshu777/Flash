@@ -80,4 +80,12 @@ void llama_runner_unload_model(void) { llama_runner_core_unload(); }
 
 void llama_runner_shutdown(void) { llama_runner_core_shutdown(); }
 
+int llama_runner_get_context_used(void) {
+    return llama_runner_core_get_context_used();
+}
+
+int llama_runner_get_context_limit(void) {
+    return llama_runner_core_get_context_limit();
+}
+
 }

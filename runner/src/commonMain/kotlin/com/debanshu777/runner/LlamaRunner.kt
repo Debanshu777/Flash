@@ -28,4 +28,8 @@ expect class LlamaRunner() {
     fun unloadModel()
 
     fun shutdown()
+
+    fun getContextUsed(): Int
+
+    fun getContextLimit(): Int
 }

@@ -72,4 +72,14 @@ actual class LlamaRunner {
     actual fun shutdown() {
         llama_runner_shutdown()
     }
+
+    @OptIn(ExperimentalForeignApi::class)
+    actual fun getContextUsed(): Int {
+        return llama_runner_get_context_used()
+    }
+
+    @OptIn(ExperimentalForeignApi::class)
+    actual fun getContextLimit(): Int {
+        return llama_runner_get_context_limit()
+    }
 }

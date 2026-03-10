@@ -245,7 +245,8 @@ class ModelViewModel(
                             sizeBytes = metadata.sizeBytes,
                             author = metadata.author,
                             libraryName = metadata.libraryName,
-                            pipelineTag = metadata.pipelineTag
+                            pipelineTag = metadata.pipelineTag,
+                            contextLength = metadata.contextLength
                         )
                     }
                 }

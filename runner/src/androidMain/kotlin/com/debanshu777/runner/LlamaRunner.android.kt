@@ -47,6 +47,10 @@ actual class LlamaRunner {
         nativeShutdown()
     }
 
+    actual fun getContextUsed(): Int = nativeGetContextUsed()
+
+    actual fun getContextLimit(): Int = nativeGetContextLimit()
+
     private external fun nativeInit(libDir: String)
     private external fun nativeLoadModel(
         modelPath: String,
@@ -69,4 +73,6 @@ actual class LlamaRunner {
 
     private external fun nativeUnloadModel()
     private external fun nativeShutdown()
+    private external fun nativeGetContextUsed(): Int
+    private external fun nativeGetContextLimit(): Int
 }

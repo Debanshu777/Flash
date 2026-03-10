@@ -23,7 +23,8 @@ class LocalModelRepository(private val dao: LocalModelDao) {
         sizeBytes: Long?,
         author: String?,
         libraryName: String?,
-        pipelineTag: String?
+        pipelineTag: String?,
+        contextLength: Int? = null
     ) {
         dao.insert(
             LocalModelEntity(
@@ -34,7 +35,8 @@ class LocalModelRepository(private val dao: LocalModelDao) {
                 downloadedAt = 0L,
                 author = author,
                 libraryName = libraryName,
-                pipelineTag = pipelineTag
+                pipelineTag = pipelineTag,
+                contextLength = contextLength
             )
         )
     }

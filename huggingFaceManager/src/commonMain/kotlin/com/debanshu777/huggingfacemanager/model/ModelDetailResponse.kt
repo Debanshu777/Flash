@@ -1,8 +1,36 @@
 package com.debanshu777.huggingfacemanager.model
 
-
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.builtins.serializer
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonDecoder
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.jsonPrimitive
+
+internal object StringOrStringListSerializer : KSerializer<List<String>> {
+    private val listSerializer = ListSerializer(String.serializer())
+    override val descriptor: SerialDescriptor = listSerializer.descriptor
+
+    override fun deserialize(decoder: Decoder): List<String> {
+        val jsonDecoder = decoder as JsonDecoder
+        val element = jsonDecoder.decodeJsonElement()
+        return when (element) {
+            is JsonArray -> element.map { it.jsonPrimitive.content }
+            is JsonPrimitive -> listOf(element.content)
+            else -> emptyList()
+        }
+    }
+
+    override fun serialize(encoder: Encoder, value: List<String>) {
+        listSerializer.serialize(encoder, value)
+    }
+}
 
 @Serializable
 data class ModelDetailResponse(
@@ -52,7 +80,8 @@ data class ModelDetailResponse(
     @Serializable
     data class CardData(
         @SerialName("base_model")
-        val baseModel: String? = null,
+        @Serializable(with = StringOrStringListSerializer::class)
+        val baseModel: List<String>? = null,
         @SerialName("base_model_relation")
         val baseModelRelation: String? = null,
         @SerialName("inference")
@@ -116,7 +145,7 @@ data class ModelDetailResponse(
         @SerialName("eos_token")
         val eosToken: String? = null,
         @SerialName("total")
-        val total: Int? = null,
+        val total: Long? = null,
     )
 
     @Serializable
@@ -124,12 +153,12 @@ data class ModelDetailResponse(
         @SerialName("parameters")
         val parameters: Parameters? = null,
         @SerialName("total")
-        val total: Int? = null,
+        val total: Long? = null,
     ) {
         @Serializable
         data class Parameters(
             @SerialName("BF16")
-            val bF16: Int? = null,
+            val bF16: Long? = null,
         )
     }
 

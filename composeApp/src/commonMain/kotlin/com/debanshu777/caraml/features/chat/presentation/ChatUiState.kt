@@ -1,6 +1,7 @@
 package com.debanshu777.caraml.features.chat.presentation
 
 import com.debanshu777.caraml.features.chat.data.ChatMessage
+import com.debanshu777.caraml.features.chat.data.LiveGenerationStats
 
 sealed interface ChatUiState {
     data object NoModels : ChatUiState
@@ -12,5 +13,6 @@ sealed interface ChatUiState {
     data class Ready(
         val messages: List<ChatMessage> = emptyList(),
         val isGenerating: Boolean = false,
+        val liveStats: LiveGenerationStats? = null,
     ) : ChatUiState
 }

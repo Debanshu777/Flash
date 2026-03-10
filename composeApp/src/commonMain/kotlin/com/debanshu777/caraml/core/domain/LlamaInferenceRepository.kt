@@ -41,6 +41,7 @@ class LlamaInferenceRepository(
                 runner.initialize(nativeLibDir)
                 val loaded = runner.loadModel(
                     modelPath = modelPath,
+                    nCtx = model.contextLength ?: 2048,
                     nGpuLayers = PlatformPaths.getDefaultGpuLayers()
                 )
 
@@ -93,6 +94,14 @@ class LlamaInferenceRepository(
             runner.shutdown()
         } catch (_: Exception) {
         }
+    }
+
+    override fun getContextUsed(): Int {
+        return runner.getContextUsed()
+    }
+
+    override fun getContextLimit(): Int {
+        return runner.getContextLimit()
     }
 
     private fun resolveModelPath(model: LocalModelEntity): String {

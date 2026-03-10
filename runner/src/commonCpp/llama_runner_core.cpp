@@ -539,3 +539,17 @@ void llama_runner_core_shutdown() {
     log_line(LLAMA_LOG_INFO, "shutdown: Freeing backend");
     llama_backend_free();
 }
+
+int llama_runner_core_get_context_used() {
+    if (!g_context) {
+        return 0;
+    }
+    return static_cast<int>(g_current_position);
+}
+
+int llama_runner_core_get_context_limit() {
+    if (!g_context) {
+        return 0;
+    }
+    return static_cast<int>(llama_n_ctx(g_context));
+}

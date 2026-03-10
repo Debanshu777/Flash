@@ -4,5 +4,6 @@ data class DownloadMetadataDTO(
     val sizeBytes: Long?,
     val author: String?,
     val libraryName: String?,
-    val pipelineTag: String?
+    val pipelineTag: String?,
+    val contextLength: Int? = null
 )

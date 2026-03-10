@@ -9,9 +9,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import com.debanshu777.caraml.core.storage.localmodel.LocalModelEntity
-import com.debanshu777.caraml.features.chat.data.ChatMessage
 import com.debanshu777.caraml.features.chat.presentation.components.ChatInputBar
 import com.debanshu777.caraml.features.chat.presentation.components.ChatMessageList
+import com.debanshu777.caraml.features.chat.presentation.components.GenerationStatsBar
 import com.debanshu777.caraml.features.chat.presentation.components.ModelErrorScreen
 import com.debanshu777.caraml.features.chat.presentation.components.ModelLoadingScreen
 import com.debanshu777.caraml.features.chat.presentation.components.ModelSelectorTopBar
@@ -85,6 +85,10 @@ fun ChatScreenContent(
                         listState = listState,
                         modifier = Modifier.weight(1f)
                     )
+
+                    if (state.isGenerating && state.liveStats != null) {
+                        GenerationStatsBar(stats = state.liveStats)
+                    }
 
                     ChatInputBar(
                         isGenerating = state.isGenerating,
