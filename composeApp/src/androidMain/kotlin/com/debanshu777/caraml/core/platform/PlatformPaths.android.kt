@@ -9,6 +9,4 @@ actual object PlatformPaths {
     } catch (_: Exception) {
         ""
     }
-
-    actual fun getDefaultGpuLayers(): Int = 0
 }

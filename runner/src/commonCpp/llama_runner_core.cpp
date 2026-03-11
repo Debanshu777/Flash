@@ -36,6 +36,7 @@ llama_pos g_current_position = 0;
 llama_pos g_system_prompt_position = 0;
 std::string g_cached_utf8_chars;
 std::string g_current_token;
+int g_stop_reason = STOP_NONE;
 
 common_chat_templates_ptr g_chat_templates;
 std::vector<common_chat_msg> g_chat_msgs;
@@ -54,18 +55,7 @@ static std::string chat_add_and_format(const std::string &role, const std::strin
     } else {
         formatted = content;
     }
-    g_chat_msgs.push_back(new_msg);
     return formatted;
-}
-
-static void shift_context() {
-    const int n_discard = static_cast<int>(g_current_position - g_system_prompt_position) / 2;
-    log_line(LLAMA_LOG_INFO, "shift_context: discarding %d tokens", n_discard);
-    llama_memory_seq_rm(llama_get_memory(g_context), 0,
-        g_system_prompt_position, g_system_prompt_position + n_discard);
-    llama_memory_seq_add(llama_get_memory(g_context), 0,
-        g_system_prompt_position + n_discard, g_current_position, -n_discard);
-    g_current_position -= n_discard;
 }
 
 static bool is_valid_utf8(const char *string) {
@@ -218,7 +208,82 @@ bool llama_runner_core_load_model(const char *model_path, const LlamaRunnerConfi
     auto t0 = std::chrono::steady_clock::now();
 
     llama_model_params model_params = llama_model_default_params();
-    model_params.n_gpu_layers = g_config.n_gpu_layers;
+    llama_context_params ctx_params = llama_context_default_params();
+
+    // Set params that are OURS to decide (not auto-fitted)
+    ctx_params.n_threads       = g_config.n_threads;
+    ctx_params.n_threads_batch = g_config.n_threads_batch > 0
+                                   ? g_config.n_threads_batch : g_config.n_threads;
+    ctx_params.n_batch         = g_config.n_batch;
+    ctx_params.n_ubatch        = g_config.n_ubatch;
+    ctx_params.flash_attn_type = static_cast<llama_flash_attn_type>(g_config.flash_attn);
+    ctx_params.offload_kqv     = g_config.offload_kqv;
+    ctx_params.type_k          = static_cast<ggml_type>(g_config.type_k);
+    ctx_params.type_v          = static_cast<ggml_type>(g_config.type_v);
+    model_params.use_mmap      = g_config.use_mmap;
+
+    if (g_config.auto_fit) {
+        log_line(LLAMA_LOG_INFO, "load: Using llama_params_fit() for automatic memory optimization");
+        
+        // If user explicitly set n_gpu_layers to 0, force CPU-only
+        if (g_config.n_gpu_layers == 0) {
+            model_params.n_gpu_layers = 0;
+            log_line(LLAMA_LOG_INFO, "load: Forcing CPU-only (n_gpu_layers=0)");
+        }
+        
+        // Leave n_gpu_layers at default (-1) so params_fit auto-determines it
+        // Set n_ctx = 0 so params_fit finds the largest context that fits
+        ctx_params.n_ctx = 0;
+
+        std::vector<float> tensor_split(llama_max_devices(), 0.0f);
+        std::vector<llama_model_tensor_buft_override> buft_overrides(
+            llama_max_tensor_buft_overrides() + 1);
+        buft_overrides.back() = {nullptr, nullptr};
+        std::vector<size_t> margins(llama_max_devices(), 0);
+
+        auto status = llama_params_fit(
+            model_path, &model_params, &ctx_params,
+            tensor_split.data(), buft_overrides.data(), margins.data(),
+            g_config.n_ctx_min, GGML_LOG_LEVEL_INFO);
+
+        if (status == LLAMA_PARAMS_FIT_STATUS_SUCCESS) {
+            model_params.tensor_split = tensor_split.data();
+            log_line(LLAMA_LOG_INFO, "load: params_fit succeeded - n_gpu_layers=%d, n_ctx=%u",
+                model_params.n_gpu_layers, ctx_params.n_ctx);
+            
+            // Safety net: if params_fit left n_ctx at 0, apply a sensible default
+            if (ctx_params.n_ctx == 0) {
+                ctx_params.n_ctx = g_config.n_ctx > 0 ? g_config.n_ctx : 4096;
+                log_line(LLAMA_LOG_INFO, "load: n_ctx was 0 after params_fit, defaulting to %u", ctx_params.n_ctx);
+            }
+            
+            // Cap n_ctx to user's preference if they specified one
+            if (g_config.n_ctx > 0 && static_cast<uint32_t>(g_config.n_ctx) < ctx_params.n_ctx) {
+                ctx_params.n_ctx = g_config.n_ctx;
+                log_line(LLAMA_LOG_INFO, "load: Capping n_ctx to user preference: %u", ctx_params.n_ctx);
+            }
+        } else {
+            log_line(LLAMA_LOG_WARN, "load: params_fit failed, falling back to CPU-only mode");
+            // Fallback: force CPU-only, minimal context
+            model_params.n_gpu_layers = 0;
+            ctx_params.n_ctx = g_config.n_ctx > 0 ? g_config.n_ctx : g_config.n_ctx_min;
+        }
+    } else {
+        // Manual mode
+        log_line(LLAMA_LOG_INFO, "load: Using manual configuration (auto_fit disabled)");
+        model_params.n_gpu_layers = g_config.n_gpu_layers;
+        ctx_params.n_ctx = g_config.n_ctx > 0 ? g_config.n_ctx : 2048;
+    }
+
+    log_line(
+        LLAMA_LOG_INFO,
+        "load: Final params - n_ctx=%u, n_threads=%d, n_threads_batch=%d, n_batch=%d, n_gpu_layers=%d",
+        ctx_params.n_ctx,
+        ctx_params.n_threads,
+        ctx_params.n_threads_batch,
+        ctx_params.n_batch,
+        model_params.n_gpu_layers);
+
     g_model = llama_model_load_from_file(model_path, model_params);
 
     auto t1 = std::chrono::steady_clock::now();
@@ -228,17 +293,6 @@ bool llama_runner_core_load_model(const char *model_path, const LlamaRunnerConfi
         return false;
     }
     log_line(LLAMA_LOG_INFO, "load: Model loaded in %lld ms", static_cast<long long>(load_ms));
-
-    llama_context_params ctx_params = llama_context_default_params();
-    ctx_params.n_ctx = g_config.n_ctx;
-    ctx_params.n_threads = g_config.n_threads;
-    ctx_params.n_batch = g_config.n_batch;
-    log_line(
-        LLAMA_LOG_INFO,
-        "load: Creating context (n_ctx=%d, n_threads=%d, n_batch=%d)",
-        g_config.n_ctx,
-        g_config.n_threads,
-        g_config.n_batch);
 
     g_context = llama_init_from_model(g_model, ctx_params);
     if (!g_context) {
@@ -282,6 +336,8 @@ std::string llama_runner_core_generate(const char *prompt, int max_tokens, float
 
 bool llama_runner_core_start_generate(const char *prompt, int max_tokens, float temperature) {
     log_line(LLAMA_LOG_INFO, "start_generate: entry max_tokens=%d", max_tokens);
+
+    g_stop_reason = STOP_NONE;
 
     if (!g_model || !g_context || !g_sampler) {
         log_line(LLAMA_LOG_ERROR, "start_generate: Model not loaded");
@@ -355,11 +411,13 @@ bool llama_runner_core_start_generate(const char *prompt, int max_tokens, float 
 const char *llama_runner_core_next_token() {
     if (g_cancel_flag) {
         log_line(LLAMA_LOG_INFO, "next_token: cancelled");
+        g_stop_reason = STOP_CANCELLED;
         finalize_assistant_turn();
         return nullptr;
     }
     if (g_max_tokens_remaining <= 0) {
         log_line(LLAMA_LOG_INFO, "next_token: max_tokens reached");
+        g_stop_reason = STOP_MAX_TOKENS;
         finalize_assistant_turn();
         return nullptr;
     }
@@ -367,8 +425,10 @@ const char *llama_runner_core_next_token() {
     const uint32_t n_ctx = llama_n_ctx(g_context);
     const int headroom = 4;
     if (g_chat_templates && g_current_position >= static_cast<llama_pos>(n_ctx) - headroom) {
-        log_line(LLAMA_LOG_INFO, "next_token: context full, shifting");
-        shift_context();
+        log_line(LLAMA_LOG_INFO, "next_token: context full");
+        g_stop_reason = STOP_CONTEXT_FULL;
+        finalize_assistant_turn();
+        return nullptr;
     }
 
     const llama_vocab *vocab = llama_model_get_vocab(g_model);
@@ -376,12 +436,14 @@ const char *llama_runner_core_next_token() {
     llama_synchronize(g_context);
     if (llama_get_logits_ith(g_context, -1) == nullptr) {
         log_line(LLAMA_LOG_ERROR, "next_token: n_outputs=0, stopping");
+        g_stop_reason = STOP_ERROR;
         return nullptr;
     }
 
     const llama_token token = common_sampler_sample(g_sampler, g_context, -1);
     if (llama_vocab_is_eog(vocab, token)) {
         log_line(LLAMA_LOG_INFO, "next_token: EOG");
+        g_stop_reason = STOP_EOG;
         finalize_assistant_turn();
         return nullptr;
     }
@@ -394,6 +456,7 @@ const char *llama_runner_core_next_token() {
     int decode_ret = llama_decode(g_context, g_batch);
     if (decode_ret != 0) {
         log_line(LLAMA_LOG_ERROR, "next_token: Decode failed ret=%d", decode_ret);
+        g_stop_reason = STOP_ERROR;
         return nullptr;
     }
 
@@ -475,6 +538,7 @@ int llama_runner_core_process_user_prompt(const char *user_prompt, int predict_l
     g_cached_utf8_chars.clear();
     g_streaming_n_generated = 0;
     g_assistant_buffer.clear();
+    g_stop_reason = STOP_NONE;
 
     std::string formatted(user_prompt);
     bool has_template = g_chat_templates && common_chat_templates_was_explicit(g_chat_templates.get());
@@ -552,4 +616,35 @@ int llama_runner_core_get_context_limit() {
         return 0;
     }
     return static_cast<int>(llama_n_ctx(g_context));
+}
+
+int llama_runner_core_get_stop_reason() {
+    return g_stop_reason;
+}
+
+void llama_runner_core_clear_context() {
+    if (!g_context) {
+        log_line(LLAMA_LOG_WARN, "clear_context: No context to clear");
+        return;
+    }
+
+    log_line(LLAMA_LOG_INFO, "clear_context: Clearing KV cache and resetting state");
+
+    llama_memory_clear(llama_get_memory(g_context), false);
+    
+    g_current_position = 0;
+    g_system_prompt_position = 0;
+    g_chat_msgs.clear();
+    g_assistant_buffer.clear();
+    g_cached_utf8_chars.clear();
+    g_streaming_tokens.clear();
+    g_streaming_n_generated = 0;
+    
+    if (g_sampler) {
+        common_sampler_reset(g_sampler);
+    }
+    
+    g_stop_reason = STOP_NONE;
+    
+    log_line(LLAMA_LOG_INFO, "clear_context: Context cleared");
 }

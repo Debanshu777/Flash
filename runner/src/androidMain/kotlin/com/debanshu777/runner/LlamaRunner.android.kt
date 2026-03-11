@@ -12,14 +12,10 @@ actual class LlamaRunner {
 
     actual fun loadModel(
         modelPath: String,
-        nCtx: Int,
-        nThreads: Int,
-        nBatch: Int,
-        nGpuLayers: Int,
-        temperature: Float,
+        config: NativeRunnerConfig,
     ): Boolean {
         validateLoadModelArgs(modelPath)
-        return nativeLoadModel(modelPath, nCtx, nThreads, nBatch, nGpuLayers, temperature)
+        return nativeLoadModel(modelPath, config)
     }
 
     actual fun nextToken(): String? = nativeNextToken()
@@ -51,14 +47,14 @@ actual class LlamaRunner {
 
     actual fun getContextLimit(): Int = nativeGetContextLimit()
 
+    actual fun getStopReason(): Int = nativeGetStopReason()
+
+    actual fun clearContext() = nativeClearContext()
+
     private external fun nativeInit(libDir: String)
     private external fun nativeLoadModel(
         modelPath: String,
-        nCtx: Int,
-        nThreads: Int,
-        nBatch: Int,
-        nGpuLayers: Int,
-        temperature: Float,
+        config: NativeRunnerConfig,
     ): Boolean
 
     private external fun nativeNextToken(): String?
@@ -75,4 +71,6 @@ actual class LlamaRunner {
     private external fun nativeShutdown()
     private external fun nativeGetContextUsed(): Int
     private external fun nativeGetContextLimit(): Int
+    private external fun nativeGetStopReason(): Int
+    private external fun nativeClearContext()
 }

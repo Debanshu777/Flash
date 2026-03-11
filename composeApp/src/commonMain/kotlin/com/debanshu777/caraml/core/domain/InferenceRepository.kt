@@ -16,4 +16,8 @@ interface InferenceRepository {
     fun shutdown()
     fun getContextUsed(): Int
     fun getContextLimit(): Int
+    fun getStopReason(): Int
+    fun isContextAboveThreshold(): Boolean
+    fun summarizeConversation(transcript: String): Flow<String>
+    suspend fun resetContextWithSummary(summary: String, lastExchange: String = ""): Boolean
 }

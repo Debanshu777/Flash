@@ -27,6 +27,43 @@ void llama_runner_init(void) {
     llama_runner_core_init(nullptr);
 }
 
+struct LlamaRunnerConfigFFI {
+    int n_ctx;
+    int n_ctx_min;
+    int n_threads;
+    int n_threads_batch;
+    int n_batch;
+    int n_ubatch;
+    int flash_attn;
+    int offload_kqv;
+    int type_k;
+    int type_v;
+    int n_gpu_layers;
+    int use_mmap;
+    float temperature;
+    int auto_fit;
+};
+
+int llama_runner_load_model_v2(const char *model_path, struct LlamaRunnerConfigFFI ffi_config) {
+    LlamaRunnerConfig config;
+    config.n_ctx           = ffi_config.n_ctx;
+    config.n_ctx_min       = ffi_config.n_ctx_min;
+    config.n_threads       = ffi_config.n_threads;
+    config.n_threads_batch = ffi_config.n_threads_batch;
+    config.n_batch         = ffi_config.n_batch;
+    config.n_ubatch        = ffi_config.n_ubatch;
+    config.flash_attn      = ffi_config.flash_attn;
+    config.offload_kqv     = ffi_config.offload_kqv != 0;
+    config.type_k          = ffi_config.type_k;
+    config.type_v          = ffi_config.type_v;
+    config.n_gpu_layers    = ffi_config.n_gpu_layers;
+    config.use_mmap        = ffi_config.use_mmap != 0;
+    config.temperature     = ffi_config.temperature;
+    config.auto_fit        = ffi_config.auto_fit != 0;
+    
+    return llama_runner_core_load_model(model_path, config) ? 1 : 0;
+}
+
 int llama_runner_load_model(
     const char *model_path,
     int n_ctx,
@@ -86,6 +123,14 @@ int llama_runner_get_context_used(void) {
 
 int llama_runner_get_context_limit(void) {
     return llama_runner_core_get_context_limit();
+}
+
+int llama_runner_get_stop_reason(void) {
+    return llama_runner_core_get_stop_reason();
+}
+
+void llama_runner_clear_context(void) {
+    llama_runner_core_clear_context();
 }
 
 }

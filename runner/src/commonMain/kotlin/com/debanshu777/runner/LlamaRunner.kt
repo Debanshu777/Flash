@@ -5,11 +5,7 @@ expect class LlamaRunner() {
 
     fun loadModel(
         modelPath: String,
-        nCtx: Int = 2048,
-        nThreads: Int = 4,
-        nBatch: Int = 512,
-        nGpuLayers: Int = 0,
-        temperature: Float = 0.3f,
+        config: NativeRunnerConfig,
     ): Boolean
 
     fun nextToken(): String?
@@ -32,4 +28,8 @@ expect class LlamaRunner() {
     fun getContextUsed(): Int
 
     fun getContextLimit(): Int
+
+    fun getStopReason(): Int
+
+    fun clearContext()
 }

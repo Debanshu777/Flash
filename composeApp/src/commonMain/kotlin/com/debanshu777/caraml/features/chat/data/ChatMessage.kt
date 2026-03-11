@@ -4,7 +4,8 @@ import kotlin.random.Random
 
 enum class MessageRole {
     User,
-    Assistant
+    Assistant,
+    System
 }
 
 data class ChatMessage(

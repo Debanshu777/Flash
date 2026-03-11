@@ -48,19 +48,26 @@ Java_com_debanshu777_runner_LlamaRunner_nativeLoadModel(
     JNIEnv *env,
     jobject,
     jstring modelPath,
-    jint nCtx,
-    jint nThreads,
-    jint nBatch,
-    jint nGpuLayers,
-    jfloat temperature) {
+    jobject configObj) {
     const char *path = env->GetStringUTFChars(modelPath, 0);
 
+    jclass cls = env->GetObjectClass(configObj);
+    
     LlamaRunnerConfig config;
-    config.n_ctx = static_cast<int>(nCtx);
-    config.n_threads = static_cast<int>(nThreads);
-    config.n_batch = static_cast<int>(nBatch);
-    config.n_gpu_layers = static_cast<int>(nGpuLayers);
-    config.temperature = static_cast<float>(temperature);
+    config.n_ctx           = env->GetIntField(configObj, env->GetFieldID(cls, "nCtx", "I"));
+    config.n_ctx_min       = env->GetIntField(configObj, env->GetFieldID(cls, "nCtxMin", "I"));
+    config.n_threads       = env->GetIntField(configObj, env->GetFieldID(cls, "nThreads", "I"));
+    config.n_threads_batch = env->GetIntField(configObj, env->GetFieldID(cls, "nThreadsBatch", "I"));
+    config.n_batch         = env->GetIntField(configObj, env->GetFieldID(cls, "nBatch", "I"));
+    config.n_ubatch        = env->GetIntField(configObj, env->GetFieldID(cls, "nUbatch", "I"));
+    config.flash_attn      = env->GetIntField(configObj, env->GetFieldID(cls, "flashAttn", "I"));
+    config.offload_kqv     = env->GetBooleanField(configObj, env->GetFieldID(cls, "offloadKqv", "Z"));
+    config.type_k          = env->GetIntField(configObj, env->GetFieldID(cls, "typeK", "I"));
+    config.type_v          = env->GetIntField(configObj, env->GetFieldID(cls, "typeV", "I"));
+    config.n_gpu_layers    = env->GetIntField(configObj, env->GetFieldID(cls, "nGpuLayers", "I"));
+    config.use_mmap        = env->GetBooleanField(configObj, env->GetFieldID(cls, "useMmap", "Z"));
+    config.temperature     = env->GetFloatField(configObj, env->GetFieldID(cls, "temperature", "F"));
+    config.auto_fit        = env->GetBooleanField(configObj, env->GetFieldID(cls, "autoFit", "Z"));
 
     const bool ok = llama_runner_core_load_model(path, config);
     env->ReleaseStringUTFChars(modelPath, path);
@@ -147,4 +154,14 @@ Java_com_debanshu777_runner_LlamaRunner_nativeGetContextUsed(JNIEnv *, jobject) 
 extern "C" JNIEXPORT jint JNICALL
 Java_com_debanshu777_runner_LlamaRunner_nativeGetContextLimit(JNIEnv *, jobject) {
     return static_cast<jint>(llama_runner_core_get_context_limit());
+}
+
+extern "C" JNIEXPORT jint JNICALL
+Java_com_debanshu777_runner_LlamaRunner_nativeGetStopReason(JNIEnv *, jobject) {
+    return static_cast<jint>(llama_runner_core_get_stop_reason());
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_debanshu777_runner_LlamaRunner_nativeClearContext(JNIEnv *, jobject) {
+    llama_runner_core_clear_context();
 }

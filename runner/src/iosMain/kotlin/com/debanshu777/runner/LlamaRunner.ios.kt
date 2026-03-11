@@ -1,17 +1,21 @@
 package com.debanshu777.runner
 
+import com.debanshu777.runner.cpp.LlamaRunnerConfigFFI
 import com.debanshu777.runner.cpp.llama_runner_cancel_generate
+import com.debanshu777.runner.cpp.llama_runner_clear_context
 import com.debanshu777.runner.cpp.llama_runner_finalize_generation
+import com.debanshu777.runner.cpp.llama_runner_get_context_limit
+import com.debanshu777.runner.cpp.llama_runner_get_context_used
+import com.debanshu777.runner.cpp.llama_runner_get_stop_reason
+import com.debanshu777.runner.cpp.llama_runner_init
+import com.debanshu777.runner.cpp.llama_runner_load_model_v2
+import com.debanshu777.runner.cpp.llama_runner_next_token
 import com.debanshu777.runner.cpp.llama_runner_process_system_prompt
 import com.debanshu777.runner.cpp.llama_runner_process_user_prompt
-import com.debanshu777.runner.cpp.llama_runner_generate_text
-import com.debanshu777.runner.cpp.llama_runner_init
-import com.debanshu777.runner.cpp.llama_runner_load_model
-import com.debanshu777.runner.cpp.llama_runner_next_token
 import com.debanshu777.runner.cpp.llama_runner_shutdown
-import com.debanshu777.runner.cpp.llama_runner_start_generate
 import com.debanshu777.runner.cpp.llama_runner_unload_model
 import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.cinterop.cValue
 import kotlinx.cinterop.toKString
 import platform.posix.free
 
@@ -24,14 +28,26 @@ actual class LlamaRunner {
     @OptIn(ExperimentalForeignApi::class)
     actual fun loadModel(
         modelPath: String,
-        nCtx: Int,
-        nThreads: Int,
-        nBatch: Int,
-        nGpuLayers: Int,
-        temperature: Float,
+        config: NativeRunnerConfig,
     ): Boolean {
         validateLoadModelArgs(modelPath)
-        return llama_runner_load_model(modelPath, nCtx, nThreads, nBatch, nGpuLayers, temperature) != 0
+        val ffiConfig = cValue<LlamaRunnerConfigFFI> {
+            n_ctx = config.nCtx
+            n_ctx_min = config.nCtxMin
+            n_threads = config.nThreads
+            n_threads_batch = config.nThreadsBatch
+            n_batch = config.nBatch
+            n_ubatch = config.nUbatch
+            flash_attn = config.flashAttn
+            offload_kqv = if (config.offloadKqv) 1 else 0
+            type_k = config.typeK
+            type_v = config.typeV
+            n_gpu_layers = config.nGpuLayers
+            use_mmap = if (config.useMmap) 1 else 0
+            temperature = config.temperature
+            auto_fit = if (config.autoFit) 1 else 0
+        }
+        return llama_runner_load_model_v2(modelPath, ffiConfig) != 0
     }
 
     @OptIn(ExperimentalForeignApi::class)
@@ -81,5 +97,15 @@ actual class LlamaRunner {
     @OptIn(ExperimentalForeignApi::class)
     actual fun getContextLimit(): Int {
         return llama_runner_get_context_limit()
+    }
+
+    @OptIn(ExperimentalForeignApi::class)
+    actual fun getStopReason(): Int {
+        return llama_runner_get_stop_reason()
+    }
+
+    @OptIn(ExperimentalForeignApi::class)
+    actual fun clearContext() {
+        llama_runner_clear_context()
     }
 }
