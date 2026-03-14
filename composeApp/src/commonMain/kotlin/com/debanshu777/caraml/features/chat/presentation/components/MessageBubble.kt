@@ -2,7 +2,6 @@ package com.debanshu777.caraml.features.chat.presentation.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -28,7 +27,7 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import com.debanshu777.caraml.features.chat.data.ChatMessage
 import com.debanshu777.caraml.features.chat.data.MessageRole
-import com.debanshu777.caraml.features.chat.presentation.components.preview.providers.ChatMessagePreviewProvider
+import com.debanshu777.caraml.features.chat.presentation.components.providers.ChatMessagePreviewProvider
 
 @Preview
 @Composable

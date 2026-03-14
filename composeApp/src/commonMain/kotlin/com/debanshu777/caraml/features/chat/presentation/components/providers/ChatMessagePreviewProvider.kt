@@ -1,4 +1,4 @@
-package com.debanshu777.caraml.features.chat.presentation.components.preview.providers
+package com.debanshu777.caraml.features.chat.presentation.components.providers
 
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import com.debanshu777.caraml.features.chat.data.ChatMessage

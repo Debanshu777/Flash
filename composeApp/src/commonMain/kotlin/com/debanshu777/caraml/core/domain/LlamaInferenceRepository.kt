@@ -25,8 +25,6 @@ class LlamaInferenceRepository(
 
     override suspend fun loadModel(model: LocalModelEntity): ModelLoadResult =
             try {
-                runner.unloadModel()
-
                 val modelPath = resolveModelPath(model)
                 if (modelPath.isBlank()) {
                     return ModelLoadResult.Error("Model path is invalid")
@@ -43,6 +41,7 @@ class LlamaInferenceRepository(
                         "Failed to initialize. Please restart the app."
                     )
                 }
+                runner.unloadModel()
 
                 runner.initialize(nativeLibDir)
                 

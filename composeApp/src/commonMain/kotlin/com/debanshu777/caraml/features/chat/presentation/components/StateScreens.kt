@@ -18,7 +18,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
-import com.debanshu777.caraml.features.chat.presentation.components.preview.providers.ErrorMessagePreviewProvider
+import com.debanshu777.caraml.features.chat.presentation.components.providers.ErrorMessagePreviewProvider
 
 @Preview
 @Composable

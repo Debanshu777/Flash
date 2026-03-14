@@ -19,7 +19,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import com.debanshu777.caraml.features.chat.data.ChatMessage
-import com.debanshu777.caraml.features.chat.presentation.components.preview.providers.ChatMessageListPreviewProvider
+import com.debanshu777.caraml.features.chat.presentation.components.providers.ChatMessageListPreviewProvider
 
 @Preview
 @Composable

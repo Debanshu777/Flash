@@ -49,8 +49,8 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import com.debanshu777.caraml.core.storage.localmodel.LocalModelEntity
 import com.debanshu777.caraml.features.chat.data.LiveGenerationStats
-import com.debanshu777.caraml.features.chat.presentation.components.preview.providers.LiveGenerationStatsPreviewProvider
-import com.debanshu777.caraml.features.chat.presentation.components.preview.providers.LocalModelPreviewProvider
+import com.debanshu777.caraml.features.chat.presentation.components.providers.LiveGenerationStatsPreviewProvider
+import com.debanshu777.caraml.features.chat.presentation.components.providers.LocalModelPreviewProvider
 import kotlinx.coroutines.delay
 
 @Preview
