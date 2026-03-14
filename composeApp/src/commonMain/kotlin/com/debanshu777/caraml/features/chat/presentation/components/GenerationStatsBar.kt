@@ -50,7 +50,7 @@ fun GenerationStatsBar(
         val formattedSpeed = ((stats.tokensPerSecond * 10).toInt() / 10.0)
         StatChip(
             modifier = Modifier.weight(1f),
-            label = "$formattedSpeed tokens/sec"
+            label = "$formattedSpeed tok/s"
         )
     }
 }

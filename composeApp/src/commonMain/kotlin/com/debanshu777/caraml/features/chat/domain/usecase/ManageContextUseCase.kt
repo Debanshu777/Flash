@@ -1,6 +1,7 @@
 package com.debanshu777.caraml.features.chat.domain.usecase
 
 import com.debanshu777.caraml.core.domain.InferenceRepository
+import com.debanshu777.caraml.core.platform.AppLogger
 import com.debanshu777.caraml.features.chat.data.ChatMessage
 import com.debanshu777.caraml.features.chat.data.MessageRole
 import com.debanshu777.caraml.features.chat.domain.ChatConfig
@@ -14,9 +15,16 @@ class ManageContextUseCase(
     private val inferenceRepository: InferenceRepository,
     private val config: ChatConfig,
 ) {
+    companion object {
+        private const val TAG = "Inference"
+    }
+
     fun needsReset(): Boolean = inferenceRepository.isContextAboveThreshold()
 
     suspend fun resetContext(messages: List<ChatMessage>): ContextResetResult {
+        AppLogger.i(TAG) {
+            "contextReset: used=${inferenceRepository.getContextUsed()}/${inferenceRepository.getContextLimit()}"
+        }
         return try {
             val nonSystemMessages = messages.filter { it.role != MessageRole.System }
             if (nonSystemMessages.isEmpty()) {

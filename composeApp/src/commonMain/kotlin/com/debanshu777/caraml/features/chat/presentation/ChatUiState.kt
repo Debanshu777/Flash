@@ -12,6 +12,7 @@ sealed interface ChatUiState {
 
     data class Ready(
         val messages: List<ChatMessage> = emptyList(),
+        val contextLimit: Int = 0,
         val streamingText: String = "",
         val streamingMessageId: String? = null,
         val isGenerating: Boolean = false,

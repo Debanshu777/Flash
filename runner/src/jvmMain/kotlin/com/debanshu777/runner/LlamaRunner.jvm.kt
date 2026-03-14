@@ -6,8 +6,7 @@ actual class LlamaRunner {
         try {
             System.loadLibrary("llama_runner")
         } catch (e: UnsatisfiedLinkError) {
-            System.err.println("Failed to load llama_runner library: ${e.message}")
-            System.err.println("Make sure the native library is built and in java.library.path")
+            System.err.println("[Runner] ERROR: Failed to load llama_runner library: ${e.message}")
         }
     }
 

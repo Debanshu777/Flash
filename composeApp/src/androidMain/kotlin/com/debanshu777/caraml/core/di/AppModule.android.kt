@@ -1,6 +1,8 @@
 package com.debanshu777.caraml.core.di
 
 import android.content.Context
+import com.debanshu777.caraml.core.platform.AndroidDeviceCapabilities
+import com.debanshu777.caraml.core.platform.DeviceCapabilities
 import com.debanshu777.caraml.core.storage.AppDatabase
 import com.debanshu777.caraml.core.storage.getDatabaseBuilder
 import com.debanshu777.caraml.core.storage.getRoomDatabase
@@ -11,10 +13,10 @@ import org.koin.dsl.module
 import org.koin.mp.KoinPlatform
 
 actual val platformHuggingFaceModule: Module = module {
-    // Storage path provider (Android-specific)
     single<StoragePathProvider> { AndroidStoragePathProvider(KoinPlatform.getKoin().get<Context>()) }
-    
-    // Database (Android-specific)
+
+    single<DeviceCapabilities> { AndroidDeviceCapabilities(KoinPlatform.getKoin().get<Context>()) }
+
     single<AppDatabase> { 
         val pathProvider = get<StoragePathProvider>()
         val dbPath = pathProvider.getDatabasePath()

@@ -93,7 +93,7 @@ class ChatViewModel(
         modelLoadJob = viewModelScope.launch(Dispatchers.IO) {
             when (val result = inferenceRepository.loadModel(model)) {
                 is ModelLoadResult.Success -> {
-                    _uiState.value = ChatUiState.Ready()
+                    _uiState.value = ChatUiState.Ready(contextLimit = result.contextSize)
                 }
                 is ModelLoadResult.Error -> {
                     _uiState.value = ChatUiState.ModelError(result.message)

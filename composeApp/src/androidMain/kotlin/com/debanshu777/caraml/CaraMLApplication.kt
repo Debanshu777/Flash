@@ -11,7 +11,7 @@ class CaraMLApplication : Application() {
         super.onCreate()
         initKoin {
             androidContext(this@CaraMLApplication)
-            androidLogger(Level.DEBUG)
+            androidLogger(Level.WARNING)
         }
     }
 }

@@ -1,6 +1,7 @@
 package com.debanshu777.caraml.core.domain
 
-import com.debanshu777.caraml.core.platform.PlatformCapabilities
+import com.debanshu777.caraml.core.platform.AppLogger
+import com.debanshu777.caraml.core.platform.DeviceCapabilities
 import com.debanshu777.caraml.core.platform.PlatformPaths
 import com.debanshu777.caraml.core.storage.localmodel.LocalModelEntity
 import com.debanshu777.huggingfacemanager.download.StoragePathProvider
@@ -17,14 +18,19 @@ import kotlinx.coroutines.withContext
 class LlamaInferenceRepository(
     private val storagePathProvider: StoragePathProvider,
     private val runner: LlamaRunner,
+    private val deviceCapabilities: DeviceCapabilities,
 ) : InferenceRepository {
 
     companion object {
+        private const val TAG = "Inference"
         const val CONTEXT_THRESHOLD = 0.85f
     }
 
     override suspend fun loadModel(model: LocalModelEntity): ModelLoadResult =
             try {
+                val sizeMB = getModelFileSizeMB(model)
+                AppLogger.i(TAG) { "loadModel: modelId=${model.modelId}, sizeMB=$sizeMB" }
+
                 val modelPath = resolveModelPath(model)
                 if (modelPath.isBlank()) {
                     return ModelLoadResult.Error("Model path is invalid")
@@ -46,6 +52,12 @@ class LlamaInferenceRepository(
                 runner.initialize(nativeLibDir)
                 
                 val config = buildRunnerConfig(model)
+                AppLogger.i(TAG) {
+                    "config: threads=${config.nThreads}/${config.nThreadsBatch}, " +
+                    "batch=${config.nBatch}, ctx=${config.nCtx}, " +
+                    "gpuLayers=${config.nGpuLayers}, kv=${config.typeK}/${config.typeV}"
+                }
+
                 val loaded = runner.loadModel(
                     modelPath = modelPath,
                     config = config,
@@ -64,35 +76,74 @@ class LlamaInferenceRepository(
                     )
                 }
 
-                ModelLoadResult.Success
+                val ctxSize = runner.getContextLimit()
+                AppLogger.i(TAG) { "loadModel: success, contextSize=$ctxSize" }
+                ModelLoadResult.Success(contextSize = ctxSize)
             } catch (e: Exception) {
+                AppLogger.e(TAG, "loadModel: failed", e)
                 ModelLoadResult.Error("An error occurred while loading the model: ${e.message}")
             }
 
-    private fun buildRunnerConfig(model: LocalModelEntity): NativeRunnerConfig {
-        val hints = PlatformCapabilities.getDeviceHints()
-        val effectiveCtx = (model.contextLength ?: hints.maxContextSize)
-            .coerceAtMost(hints.maxContextSize)
+    private fun buildRunnerConfig(
+        model: LocalModelEntity,
+        defaultTemperature: Float = 0.3f,
+    ): NativeRunnerConfig {
+        val hints = deviceCapabilities.getDeviceHints()
+        AppLogger.i(TAG) {
+            "device: cores=${hints.performanceCoreCount}/${hints.totalCoreCount}, " +
+            "memMB=${hints.memoryBudgetMB}, gpu=${hints.gpuBackendAvailable}"
+        }
+        val userRequestedCtx = model.contextLength ?: 0
+        val modelSizeMB = getModelFileSizeMB(model)
+        val isLargeModel = modelSizeMB > 4096
+
+        val gpuActive = hints.gpuBackendAvailable
+        val nThreads = when {
+            gpuActive -> 2.coerceAtLeast(hints.performanceCoreCount / 2)
+            isLargeModel -> (hints.performanceCoreCount - 1).coerceAtLeast(2)
+            else -> hints.performanceCoreCount
+        }
+        val nThreadsBatch = if (gpuActive) {
+            (hints.totalCoreCount / 2).coerceAtLeast(2)
+        } else {
+            (hints.totalCoreCount - 1).coerceAtLeast(hints.performanceCoreCount)
+        }
+
+        val batchSize = when {
+            modelSizeMB > 8192 -> 128
+            modelSizeMB > 4096 -> 256
+            else -> if (hints.memoryBudgetMB >= 4096) 512 else 256
+        }
+
         return NativeRunnerConfig(
-            nCtx           = effectiveCtx,
+            nCtx           = userRequestedCtx,
             nCtxMin        = 512,
-            nThreads       = hints.performanceCoreCount,
-            nThreadsBatch  = (hints.totalCoreCount - 1).coerceAtLeast(hints.performanceCoreCount),
-            nBatch         = if (hints.availableMemoryMB >= 4096) 512 else 256,
-            nUbatch        = if (hints.availableMemoryMB >= 4096) 512 else 256,
+            nThreads       = nThreads,
+            nThreadsBatch  = nThreadsBatch,
+            nBatch         = batchSize,
+            nUbatch        = batchSize / 2,
             flashAttn      = -1,
-            offloadKqv     = hints.gpuBackendCompiled,
-            typeK          = if (hints.availableMemoryMB < 4096) 8 else 1,
-            typeV          = if (hints.availableMemoryMB < 4096) 8 else 1,
-            nGpuLayers     = if (hints.gpuBackendCompiled) -1 else 0,
-            useMmap        = hints.supportsMmap,
-            temperature    = 0.3f,
+            offloadKqv     = gpuActive,
+            typeK          = if (hints.memoryBudgetMB < 4096) 8 else 1,
+            typeV          = if (hints.memoryBudgetMB < 4096) 8 else 1,
+            nGpuLayers     = if (gpuActive) -1 else 0,
+            useMmap        = true,
+            temperature    = defaultTemperature,
             autoFit        = true,
         )
     }
 
-    override fun generateResponse(userPrompt: String, predictLength: Int): Flow<String> = flow {
-        val ret = runner.processUserPrompt(userPrompt, predictLength)
+    private fun getModelFileSizeMB(model: LocalModelEntity): Long {
+        return (model.sizeBytes ?: 0L) / (1024 * 1024)
+    }
+
+    override fun generateResponse(userPrompt: String): Flow<String> = flow {
+        val remainingCtx = (runner.getContextLimit() - runner.getContextUsed()).coerceAtLeast(1)
+        AppLogger.i(TAG) {
+            "generate: promptLen=${userPrompt.length}, remainingCtx=$remainingCtx, " +
+            "context=${runner.getContextUsed()}/${runner.getContextLimit()}"
+        }
+        val ret = runner.processUserPrompt(userPrompt, remainingCtx)
         if (ret != 0) {
             throw IllegalStateException("Failed to process message")
         }
@@ -110,6 +161,7 @@ class LlamaInferenceRepository(
     }
 
     override fun cancelGeneration() {
+        AppLogger.i(TAG) { "cancelled" }
         runner.cancelGenerate()
     }
 
@@ -143,11 +195,9 @@ class LlamaInferenceRepository(
                 throw IllegalStateException("Failed to process summarization system prompt")
             }
 
-            // Truncate transcript if needed to fit within 60% of context
             val contextLimit = runner.getContextLimit()
-            val maxTranscriptChars = (contextLimit * 0.6 * 3).toInt() // ~3 chars per token
+            val maxTranscriptChars = (contextLimit * 0.6 * 3).toInt()
             val truncatedTranscript = if (transcript.length > maxTranscriptChars) {
-                // Keep the most recent part of the transcript
                 transcript.takeLast(maxTranscriptChars)
             } else {
                 transcript
@@ -178,7 +228,6 @@ class LlamaInferenceRepository(
             try {
                 runner.clearContext()
                 
-                // Build comprehensive system prompt with summary and last exchange
                 val systemPrompt = buildString {
                     append("You are a helpful assistant.")
                     

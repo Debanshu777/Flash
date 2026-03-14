@@ -36,7 +36,8 @@ val appModule = module {
     single<InferenceRepository> {
         LlamaInferenceRepository(
             storagePathProvider = get(),
-            runner = get()
+            runner = get(),
+            deviceCapabilities = get(),
         )
     }
 
